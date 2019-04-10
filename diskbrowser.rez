@@ -1,0 +1,229 @@
+#include "types.rez"
+
+#define winDiskBrowser 1001
+
+#define searchLine 1002
+#define searchButton 1003
+#define findDisksForText 1004
+#define forIIGSRadio 1005
+#define forAnyAppleIIRadio 1006
+#define disksList 1007
+#define previousPageButton 1008
+#define pageText 1009
+#define pageNumberLine 1010
+#define ofPagesText 1011
+#define nextPageButton 1012
+#define mountDiskButton 1013
+
+resource rWindParam1 (winDiskBrowser) {
+    fTitle+fClose+fFlex+fMove+fVis,     /* wFrameBits */
+    nil,                                /* wTitle */
+    0,                                  /* wRefCon */
+    {0,0,0,0},                          /* ZoomRect */
+    nil,                                /* wColor ID */
+    {0,0},                              /* Origin */
+    {0,0},                              /* data size */
+    {0,0},                              /* max height-width */
+    {0,0},                              /* scroll vertical, horizontal */
+    {0,0},                              /* page vertical, horizontal */
+    0,                                  /* wInfoRefCon */
+    0,                                  /* wInfoHeight */
+    {27,5,198,425},                     /* wPosition */
+    infront,                            /* wPlane */
+    winDiskBrowser,                     /* wStorage */
+    $0009                               /* wInVerb */
+};
+
+resource rControlList (winDiskBrowser) {{
+    searchLine,
+    searchButton,
+    findDisksForText,
+    forIIGSRadio,
+    forAnyAppleIIRadio,
+    disksList,
+    previousPageButton,
+    pageText,
+    pageNumberLine,
+    ofPagesText,
+    nextPageButton,
+    mountDiskButton
+}};
+
+resource rControlTemplate (searchLine) {
+    searchLine,
+    {8, 10, 26, 300},
+    editLineControl {{
+        0,
+        $7000+RefIsResource,
+        0,
+        255,                            /* max size */
+        searchLine                      /* text ref */
+    }};
+};
+
+resource rPString (searchLine) { "" };
+
+
+resource rControlTemplate (searchButton) {
+    searchButton,
+    {10, 309, 0, 0},
+    SimpleButtonControl {{
+        DefaultButton,
+        $3000+RefIsResource,
+        0,
+        searchButton,
+        0,                              /* color table ref */
+        {"\$0D","\$0D",0,0}             /* key equivalent = Return */
+    }};
+};
+
+resource rPString(searchButton) { "Find Disks" };
+
+
+resource rControlTemplate (findDisksForText) {
+    findDisksForText,                    /* control ID */
+    {30, 9, 42, 118},                   /* control rect */
+    statTextControl {{
+        fBlastText,                     /* flags */
+        $1000+RefIsResource,            /* moreFlags */
+        0,                              /* refCon */
+        findDisksForText                 /* title ref */
+    }};
+};
+
+resource rTextForLETextBox2 (findDisksForText) {
+    "Find disks for:"
+};
+
+resource rControlTemplate (forIIGSRadio) {
+    forIIGSRadio,
+    {30,120,0,0},
+    RadioControl {{
+        $0002,
+        $1002,
+        0,
+        forIIGSRadio,                   /* Title ref */
+        1                               /* initial value */
+    }};
+};
+resource rPString (forIIgsRadio) {"Apple IIGS"};
+
+resource rControlTemplate (forAnyAppleIIRadio) {
+    forAnyAppleIIRadio,
+    {30,235,0,0},
+    RadioControl {{
+        $0002,
+        $1002,
+        0,
+        forAnyAppleIIRadio,             /* Title ref */
+        0                               /* initial value */
+    }};
+};
+resource rPString (forAnyAppleIIRadio) {"Any Apple II"};
+
+resource rControlTemplate (disksList) {
+    disksList,                          /* control ID */
+    {45, 10, 147, 410},                 /* control rect */
+    ListControl {{
+        $0007,                          /* flags */
+        $1400,                          /* more flags */
+        0,                              /* refcon */
+        0,                              /* list size */
+        10,                              /* List View */
+        $0000,                          /* List Type */
+        0,                              /* List Start */
+        10,                             /* ListMemHeight */
+        5,                              /* List Mem Size */
+        0,                              /* List Ref */
+        0                               /* Color Ref */
+    }};
+};
+
+resource rControlTemplate (previousPageButton) {
+    previousPageButton,
+    {150, 10, 161, 34},
+    SimpleButtonControl {{
+        0,
+        $3000+RefIsResource,
+        0,
+        previousPageButton,
+        0,                              /* color table ref */
+        {"","",0,0}                     /* key equivalent */
+    }};
+};
+
+resource rPString(previousPageButton) { "<" };
+
+resource rControlTemplate (pageText) {
+    pageText,                           /* control ID */
+    {151, 38, 163, 90},                 /* control rect */
+    statTextControl {{
+        fBlastText,                     /* flags */
+        $1000+RefIsResource,            /* moreFlags */
+        0,                              /* refCon */
+        pageText                        /* title ref */
+    }};
+};
+
+resource rTextForLETextBox2 (pageText) {
+    "Page"
+};
+
+resource rControlTemplate (pageNumberLine) {
+    pageNumberLine,
+    {149, 72, 162, 116},
+    editLineControl {{
+        0,
+        $7000+RefIsResource,
+        0,
+        255,                            /* max size */
+        pageNumberLine                  /* text ref */
+    }};
+};
+
+resource rPString (pageNumberLine) { "1000" };
+
+resource rControlTemplate (ofPagesText) {
+    ofPagesText,                        /* control ID */
+    {151, 119, 163, 170},               /* control rect */
+    statTextControl {{
+        fBlastText,                     /* flags */
+        $1000+RefIsResource,            /* moreFlags */
+        0,                              /* refCon */
+        ofPagesText                     /* title ref */
+    }};
+};
+
+resource rTextForLETextBox2 (ofPagesText) {
+    "/ 1000"
+};
+
+resource rControlTemplate (nextPageButton) {
+    nextPageButton,
+    {150, 168, 161, 192},
+    SimpleButtonControl {{
+        0,
+        $3000+RefIsResource,
+        0,
+        nextPageButton,
+        0,                              /* color table ref */
+        {"","",0,0}                     /* key equivalent */
+    }};
+};
+
+resource rPString(nextPageButton) { ">" };
+
+resource rControlTemplate (mountDiskButton) {
+    mountDiskButton,
+    {152, 305, 0, 0},
+    SimpleButtonControl {{
+        DefaultButton,
+        $3000+RefIsResource,
+        0,
+        mountDiskButton,
+        0,                              /* color table ref */
+        {"","",0,0}                     /* key equivalent */
+    }};
+};
+
+resource rPString(mountDiskButton) { "Mount Disk" };
