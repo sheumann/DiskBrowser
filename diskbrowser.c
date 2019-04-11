@@ -9,6 +9,7 @@
 #include <memory.h>
 #include <control.h>
 #include <lineedit.h>
+#include <list.h>
 #include <desk.h>
 #include <gsos.h>
 #include <orca.h>
@@ -45,6 +46,18 @@ Word myUserID;
 GrafPortPtr window;
 
 Boolean resourceFileOpened, windowOpened;
+
+/* User preference */
+boolean gsDisksOnly = true;
+
+#define DISK_LIST_LENGTH 10
+
+struct diskListEntry {
+    char *memPtr;
+    Byte memFlag;
+};
+
+struct diskListEntry diskList[DISK_LIST_LENGTH];
 
 /* Record about our system window, to support processing by Desk Manager. */
 /* See Prog. Ref. for System 6.0, page 20. */
@@ -93,6 +106,9 @@ void CloseBrowserWindow(void) {
         CloseWindow(window);
         windowOpened = false;
         window = NULL;
+        
+        /* reset state */
+        gsDisksOnly = true;
     }
 
     if (resourceFileOpened && !windowOpened) {
@@ -134,9 +150,46 @@ boolean DoLEEdit (int editAction) {
     return ((id == searchLine) || (id == pageNumberLine));
 }
 
+/* Do a search */
+void DoSearch(void) {
+    for (int i = 0; i < DISK_LIST_LENGTH; i++) {
+        diskList[i].memPtr = "This is the title of some disk you could mount";
+        diskList[i].memFlag = 0;
+    }
+    
+    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
+             DISK_LIST_LENGTH, (Handle) GetCtlHandleFromID(window, disksList));
+}
+
 /* Handle an event after TaskMasterDA processing */
 void HandleEvent(int eventCode, WmTaskRec *taskRec) {
     switch (eventCode) {
+    case wInControl:
+        switch (taskRec->wmTaskData4) {
+        case searchButton:
+            DoSearch();
+            break;
+        
+        case forIIGSRadio:
+            gsDisksOnly = true;
+            break;
+        case forAnyAppleIIRadio:
+            gsDisksOnly = false;
+            break;
+        
+        case previousPageButton:
+            //TODO
+            break;
+        case nextPageButton:
+            //TODO
+            break;
+        
+        case mountDiskButton:
+            // TODO
+            break;
+        }
+        break;
+    
     case keyDownEvt:
     case autoKeyEvt:
         /* Handle keyboard shortcuts for cut/copy/paste */

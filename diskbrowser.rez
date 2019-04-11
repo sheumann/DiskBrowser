@@ -35,18 +35,18 @@ resource rWindParam1 (winDiskBrowser) {
 };
 
 resource rControlList (winDiskBrowser) {{
-    searchLine,
-    searchButton,
-    findDisksForText,
-    forIIGSRadio,
-    forAnyAppleIIRadio,
-    disksList,
+    mountDiskButton,
     previousPageButton,
     pageText,
     pageNumberLine,
     ofPagesText,
     nextPageButton,
-    mountDiskButton
+    disksList,
+    findDisksForText,
+    forIIGSRadio,
+    forAnyAppleIIRadio,
+    searchLine,
+    searchButton
 }};
 
 resource rControlTemplate (searchLine) {
@@ -126,7 +126,7 @@ resource rControlTemplate (disksList) {
     {45, 10, 147, 410},                 /* control rect */
     ListControl {{
         $0007,                          /* flags */
-        $1400,                          /* more flags */
+        $7400,                          /* more flags */
         0,                              /* refcon */
         0,                              /* list size */
         10,                              /* List View */
@@ -195,7 +195,7 @@ resource rControlTemplate (ofPagesText) {
 };
 
 resource rTextForLETextBox2 (ofPagesText) {
-    ""
+    " "
 };
 
 resource rControlTemplate (nextPageButton) {
