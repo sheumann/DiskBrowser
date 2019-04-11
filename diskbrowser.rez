@@ -144,7 +144,7 @@ resource rControlTemplate (previousPageButton) {
     {150, 10, 161, 34},
     SimpleButtonControl {{
         0,
-        $3000+RefIsResource,
+        $1000+RefIsResource,
         0,
         previousPageButton,
         0,                              /* color table ref */
@@ -176,12 +176,12 @@ resource rControlTemplate (pageNumberLine) {
         0,
         $7000+RefIsResource,
         0,
-        255,                            /* max size */
+        4,                              /* max size */
         pageNumberLine                  /* text ref */
     }};
 };
 
-resource rPString (pageNumberLine) { "1000" };
+resource rPString (pageNumberLine) { "" };
 
 resource rControlTemplate (ofPagesText) {
     ofPagesText,                        /* control ID */
@@ -195,7 +195,7 @@ resource rControlTemplate (ofPagesText) {
 };
 
 resource rTextForLETextBox2 (ofPagesText) {
-    "/ 1000"
+    ""
 };
 
 resource rControlTemplate (nextPageButton) {
@@ -203,7 +203,7 @@ resource rControlTemplate (nextPageButton) {
     {150, 168, 161, 192},
     SimpleButtonControl {{
         0,
-        $3000+RefIsResource,
+        $1000+RefIsResource,
         0,
         nextPageButton,
         0,                              /* color table ref */
@@ -217,8 +217,8 @@ resource rControlTemplate (mountDiskButton) {
     mountDiskButton,
     {152, 305, 0, 0},
     SimpleButtonControl {{
-        DefaultButton,
-        $3000+RefIsResource,
+        0,
+        $1000+RefIsResource,
         0,
         mountDiskButton,
         0,                              /* color table ref */

@@ -8,6 +8,7 @@
 #include <misctool.h>
 #include <memory.h>
 #include <control.h>
+#include <lineedit.h>
 #include <desk.h>
 #include <gsos.h>
 #include <orca.h>
@@ -20,6 +21,19 @@ char diskbrowserRequestName[] = "\pSTH~DiskBrowser~";
 char finderRequestName[] = "\pApple~Finder~";
 
 #define winDiskBrowser 1001
+
+#define searchLine 1002
+#define searchButton 1003
+#define findDisksForText 1004
+#define forIIGSRadio 1005
+#define forAnyAppleIIRadio 1006
+#define disksList 1007
+#define previousPageButton 1008
+#define pageText 1009
+#define pageNumberLine 1010
+#define ofPagesText 1011
+#define nextPageButton 1012
+#define mountDiskButton 1013
 
 Word resourceFileID;
 
@@ -88,11 +102,66 @@ void CloseBrowserWindow(void) {
 }
 #pragma databank 0
 
+boolean DoLEEdit (int editAction) {
+    CtlRecHndl ctl;         /* target control handle */
+    unsigned long id;       /* control ID */
+    GrafPortPtr port;       /* caller's GrafPort */
+
+    port = GetPort();
+    SetPort(window);
+    ctl = FindTargetCtl();
+    id = GetCtlID(ctl);
+    if ((id == searchLine) || (id == pageNumberLine)) {
+        LEFromScrap();
+        switch (editAction) {
+            case cutAction: 
+                LECut((LERecHndl) GetCtlTitle(ctl));          
+                LEToScrap();
+                break;
+            case copyAction:
+                LECopy((LERecHndl) GetCtlTitle(ctl));
+                LEToScrap();
+                break;
+            case pasteAction:
+                LEPaste((LERecHndl) GetCtlTitle(ctl));  
+                break;
+            case clearAction:
+                LEDelete((LERecHndl) GetCtlTitle(ctl));     
+                break;
+        };
+    };
+    SetPort(port);
+    return ((id == searchLine) || (id == pageNumberLine));
+}
+
+/* Handle an event after TaskMasterDA processing */
+void HandleEvent(int eventCode, WmTaskRec *taskRec) {
+    switch (eventCode) {
+    case keyDownEvt:
+    case autoKeyEvt:
+        /* Handle keyboard shortcuts for cut/copy/paste */
+        if (taskRec->modifiers & appleKey) {
+            switch (taskRec->message & 0x000000FF) {
+            case 'x': case 'X':
+                DoLEEdit(cutAction);
+                break;
+            case 'c': case 'C':
+                DoLEEdit(copyAction);
+                break;
+            case 'v': case 'V':
+                DoLEEdit(pasteAction);
+                break;
+            }
+        }
+        break;
+    }
+}
+
 /* NDA-style action routine for our window */
 #pragma databank 1
 int ActionProc(EventRecord *eventRec, int actionCode) {
     static WmTaskRec taskRec;
-    int handledEvent = 0;
+    int handledAction = 0;
 
     switch (actionCode) {
     case eventAction:
@@ -101,23 +170,23 @@ int ActionProc(EventRecord *eventRec, int actionCode) {
         memmove(&taskRec, eventRec, 16);
         taskRec.wmTaskMask = 0x1F7FFF; /* everything except tmInfo */
         
-        TaskMasterDA(0, &taskRec);
+        HandleEvent(TaskMasterDA(0, &taskRec), &taskRec);
         break;
 
     case cursorAction:
         break;
         
-    case cutAction: // TODO
-        break;
+    case cutAction:
     case copyAction:
-        break;
     case pasteAction:
-        break;
     case clearAction:
+        if (windowOpened) {
+            handledAction = DoLEEdit(actionCode);
+        }
         break;
     }
 
-    return handledEvent;
+    return handledAction;
 }
 #pragma databank 0
 
