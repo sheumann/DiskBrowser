@@ -126,7 +126,7 @@ resource rControlTemplate (disksList) {
     {45, 10, 147, 410},                 /* control rect */
     ListControl {{
         $0007,                          /* flags */
-        $7400,                          /* more flags */
+        $1400,                          /* more flags */
         0,                              /* refcon */
         0,                              /* list size */
         10,                              /* List View */

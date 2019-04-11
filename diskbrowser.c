@@ -152,6 +152,8 @@ boolean DoLEEdit (int editAction) {
 
 /* Do a search */
 void DoSearch(void) {
+    CtlRecHndl disksListHandle;
+
     for (int i = 0; i < DISK_LIST_LENGTH; i++) {
         diskList[i].memPtr = "This is the title of some disk you could mount";
         diskList[i].memFlag = 0;
@@ -159,6 +161,19 @@ void DoSearch(void) {
     
     NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
              DISK_LIST_LENGTH, (Handle) GetCtlHandleFromID(window, disksList));
+
+    disksListHandle = GetCtlHandleFromID(window, disksList);
+    SetCtlMoreFlags(
+        GetCtlMoreFlags(disksListHandle) | fCtlCanBeTarget | fCtlWantEvents,
+        disksListHandle);
+    HiliteControl(noHilite, disksListHandle);
+    HiliteControl(noHilite, GetCtlHandleFromID(window, mountDiskButton));
+    
+    ShowControl(GetCtlHandleFromID(window, previousPageButton));
+    ShowControl(GetCtlHandleFromID(window, pageText));
+    ShowControl(GetCtlHandleFromID(window, pageNumberLine));
+    ShowControl(GetCtlHandleFromID(window, ofPagesText));
+    ShowControl(GetCtlHandleFromID(window, nextPageButton));
 }
 
 /* Handle an event after TaskMasterDA processing */
@@ -294,6 +309,15 @@ void ShowBrowserWindow(void) {
     sysWindRecord.eventMask = 0xFFFF; //0x03FF;
     sysWindRecord.memoryID = myUserID;
     auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
+    
+    HiliteControl(inactiveHilite, GetCtlHandleFromID(window, disksList));
+    HiliteControl(inactiveHilite, GetCtlHandleFromID(window, mountDiskButton));
+    
+    HideControl(GetCtlHandleFromID(window, previousPageButton));
+    HideControl(GetCtlHandleFromID(window, pageText));
+    HideControl(GetCtlHandleFromID(window, pageNumberLine));
+    HideControl(GetCtlHandleFromID(window, ofPagesText));
+    HideControl(GetCtlHandleFromID(window, nextPageButton));
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {
