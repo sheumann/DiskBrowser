@@ -1,5 +1,6 @@
 #pragma rtl
 
+#include <string.h>
 #include <locator.h>
 #include <menu.h>
 #include <resources.h>
@@ -72,6 +73,62 @@ void DrawContents(void) {
 }
 #pragma databank 0
 
+#pragma databank 1
+void CloseBrowserWindow(void) {
+    if (windowOpened) {
+        CloseWindow(window);
+        windowOpened = false;
+        window = NULL;
+    }
+
+    if (resourceFileOpened && !windowOpened) {
+        CloseResourceFile(resourceFileID);
+        resourceFileOpened = false;
+    }
+}
+#pragma databank 0
+
+/* NDA-style action routine for our window */
+#pragma databank 1
+int ActionProc(EventRecord *eventRec, int actionCode) {
+    static WmTaskRec taskRec;
+    int handledEvent = 0;
+
+    switch (actionCode) {
+    case eventAction:
+        /* Copy basic event rec & use our own wmTaskMask, as per IIgs TN 84 */
+        memset(&taskRec, sizeof(taskRec), 0);
+        memmove(&taskRec, eventRec, 16);
+        taskRec.wmTaskMask = 0x1F7FFF; /* everything except tmInfo */
+        
+        TaskMasterDA(0, &taskRec);
+        break;
+
+    case cursorAction:
+        break;
+        
+    case cutAction: // TODO
+        break;
+    case copyAction:
+        break;
+    case pasteAction:
+        break;
+    case clearAction:
+        break;
+    }
+
+    return handledEvent;
+}
+#pragma databank 0
+
+asm void actionProcWrapper(void) {
+    pha
+    phy
+    phx
+    jsl ActionProc
+    rtl
+}
+
 void ShowBrowserWindow(void) {
     if (windowOpened) {
         BringToFront(window);
@@ -100,10 +157,26 @@ void ShowBrowserWindow(void) {
     windowOpened = true;
 
     SetSysWindow(window);
+    
+    AuxWindInfoRecord *auxWindInfo = GetAuxWindInfo(window);
+    if (toolerror()) {
+        CloseWindow(window);
+        windowOpened = false;
+        window = NULL;
+        goto cleanup;
+    }
+    
+    memset(&sysWindRecord, sizeof(sysWindRecord), 0);
+    sysWindRecord.closeProc = (ProcPtr)CloseBrowserWindow;
+    sysWindRecord.actionProc = (ProcPtr)actionProcWrapper;
+    sysWindRecord.eventMask = 0xFFFF; //0x03FF;
+    sysWindRecord.memoryID = myUserID;
+    auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
 
 cleanup:
-    if (resourceFileOpened) {
-        //CloseResourceFile(resourceFileID); // FIXME OK to do here ??
+    if (resourceFileOpened && !windowOpened) {
+        CloseResourceFile(resourceFileID);
+        resourceFileOpened = false;
     }
     
     SetCurResourceApp(origResourceApp);
