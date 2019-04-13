@@ -15,7 +15,13 @@
 #include <orca.h>
 #include <finder.h>
 #include <tcpip.h>
+#include <stdlib.h>
+#include "session.h"
 #include "mounturl.h"
+#include "seturl.h"
+#include "http.h"
+#include "readtcp.h"
+#include "tcpconnection.h"
 
 static char menuTitle[] = "\pArchive.org Disk Browser\xC9";
 static char windowTitle[] = "\p  Archive.org Disk Browser  ";
@@ -62,6 +68,8 @@ struct diskListEntry {
 struct diskListEntry diskList[DISK_LIST_LENGTH];
 
 static struct MountURLRec mountURLRec = {sizeof(struct MountURLRec)};
+
+Session sess = {0};
 
 /* Record about our system window, to support processing by Desk Manager. */
 /* See Prog. Ref. for System 6.0, page 20. */
@@ -156,21 +164,46 @@ boolean DoLEEdit (int editAction) {
 
 /* Do a search */
 void DoSearch(void) {
-    CtlRecHndl disksListHandle;
+    static char searchURL[] = "http://archive.org/advancedsearch.php?q=emulator%3Aapple3&fl%5B%5D=identifier&fl%5B%5D=title&rows=3&page=1&output=json";
+    enum NetDiskError result;
 
+    result = SetURL(&sess, searchURL, FALSE, FALSE);
+    //TODO enable this once we have real code to build the URL
+    //if (result != OPERATION_SUCCESSFUL)
+    //    goto errorReturn;
+
+    result = DoHTTPRequest(&sess);
+    if (result != OPERATION_SUCCESSFUL)
+        goto errorReturn;
+
+    /* Limit content to <64k, to avoid any problems with 16-bit computations */
+    if (sess.contentLength == 0 || sess.contentLength > 0xffff)
+        sess.contentLength = 0xffff;
+
+    char *buf = malloc(sess.contentLength + 1);
+    if (buf == NULL)
+        goto errorReturn;
+
+    InitReadTCP(&sess, sess.contentLength, buf);
+    while (TryReadTCP(&sess) == rsWaiting)
+        /* keep reading */ ;
+    *(buf + (sess.contentLength - sess.readCount)) = 0;
+
+    //TODO
     for (int i = 0; i < DISK_LIST_LENGTH; i++) {
-        diskList[i].memPtr = "This is the title of some disk you could mount";
+        diskList[i].memPtr = buf;
         diskList[i].memFlag = 0;
     }
     
+    /* Update state of controls once disk list is available */
+    CtlRecHndl disksListHandle = GetCtlHandleFromID(window, disksList);
+    HiliteControl(noHilite, disksListHandle);
     NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
-             DISK_LIST_LENGTH, (Handle) GetCtlHandleFromID(window, disksList));
+             DISK_LIST_LENGTH, (Handle)disksListHandle);
 
-    disksListHandle = GetCtlHandleFromID(window, disksList);
     SetCtlMoreFlags(
         GetCtlMoreFlags(disksListHandle) | fCtlCanBeTarget | fCtlWantEvents,
         disksListHandle);
-    HiliteControl(noHilite, disksListHandle);
     HiliteControl(noHilite, GetCtlHandleFromID(window, mountDiskButton));
     
     ShowControl(GetCtlHandleFromID(window, previousPageButton));
@@ -178,6 +211,14 @@ void DoSearch(void) {
     ShowControl(GetCtlHandleFromID(window, pageNumberLine));
     ShowControl(GetCtlHandleFromID(window, ofPagesText));
     ShowControl(GetCtlHandleFromID(window, nextPageButton));
+    
+    EndTCPConnection(&sess);
+    return;
+
+errorReturn:
+    EndTCPConnection(&sess);
+    // TODO show error message
+    //SysBeep();
 }
 
 /* Handle an event after TaskMasterDA processing */
