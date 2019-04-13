@@ -14,6 +14,8 @@
 #include <gsos.h>
 #include <orca.h>
 #include <finder.h>
+#include <tcpip.h>
+#include "mounturl.h"
 
 static char menuTitle[] = "\pArchive.org Disk Browser\xC9";
 static char windowTitle[] = "\p  Archive.org Disk Browser  ";
@@ -58,6 +60,8 @@ struct diskListEntry {
 };
 
 struct diskListEntry diskList[DISK_LIST_LENGTH];
+
+static struct MountURLRec mountURLRec = {sizeof(struct MountURLRec)};
 
 /* Record about our system window, to support processing by Desk Manager. */
 /* See Prog. Ref. for System 6.0, page 20. */
@@ -365,6 +369,21 @@ static pascal Word requestProc(Word reqCode, Long dataIn, void *dataOut) {
 #pragma toolparms 0
 #pragma databank 0
 
+boolean NetDiskPresent(void)
+{
+    mountURLRec.result = NETDISK_NOT_PRESENT;
+    mountURLRec.url = "";
+    mountURLRec.flags = flgUseCache;
+
+    SendRequest(MountURL, sendToName|stopAfterOne, (Long)NETDISK_REQUEST_NAME,
+                (Long)&mountURLRec, NULL);
+
+    if (mountURLRec.result == NETDISK_NOT_PRESENT) {
+        return false;
+    }
+
+    return true;
+}
 
 int main(void) {
     myUserID = MMStartUp(); //userid() & 0xF0FF;
@@ -372,6 +391,11 @@ int main(void) {
     Word origResourceApp = GetCurResourceApp();
     ResourceStartUp(myUserID);
     SetCurResourceApp(origResourceApp);
+
+    /* Bail out if NetDisk or Marinetti is not present */
+    if (!NetDiskPresent() || !TCPIPStatus() || toolerror()) {
+        return 1;
+    }
 
     AcceptRequests(diskbrowserRequestName, myUserID, &requestProc);
 }
