@@ -6,6 +6,6 @@
 #include "netdiskerror.h"
 
 Boolean BuildHTTPRequest(Session *sess, char *resourceStr);
-enum NetDiskError DoHTTPRequest(Session *sess, unsigned long start, unsigned long end);
+enum NetDiskError DoHTTPRequest(Session *sess);
 
 #endif

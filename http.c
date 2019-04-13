@@ -66,12 +66,13 @@ Boolean BuildHTTPRequest(Session *sess, char *resourceStr) {
     sizeNeeded = 0;
     do {
         sizeNeeded = snprintf(sess->httpRequest, sizeNeeded, 
-            "GET /%s HTTP/1.1\r\n"
+            "GET /%s HTTP/1.0\r\n"
             "Host: %s\r\n"
             "User-Agent: GS-Disk-Browser/" USER_AGENT_VERSION "\r\n"
             "Accept-Encoding: identity\r\n"
             //"Accept: */*\r\n" /* default, but some clients send explicitly */
-            //"Connection: Keep-Alive\r\n" /* same */
+            //"Connection: Keep-Alive\r\n" /* same (in HTTP/1.1) */
+            "Connection: close\r\n"
             "\r\n",
             resourceStr,
             sess->hostName+1);
@@ -94,13 +95,15 @@ Boolean BuildHTTPRequest(Session *sess, char *resourceStr) {
         }
     } while (round++ == 0);
     
+    sess->httpRequestLen = sizeNeeded;
+    
     free(escapedStr);
     
     return TRUE;
 }
 
 enum NetDiskError 
-DoHTTPRequest(Session *sess, unsigned long start, unsigned long end) {
+DoHTTPRequest(Session *sess) {
 top:;
     union {
         srBuff srBuff;
@@ -184,7 +187,7 @@ netRetry:
     if (strncmp(response, "HTTP/1.", 7) != 0)
         goto errorReturn;
     response += 7;
-    if (!(*response >= '1' && *response <= '9'))
+    if (!(*response >= '0' && *response <= '9'))
         goto errorReturn;
     response += 1;
     if (*response != ' ')
