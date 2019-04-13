@@ -1,19 +1,19 @@
 CC = occ
 CFLAGS = -w-1 -O-1
 
-TEST_OBJS = test.a json.a jsonutil.a
-TEST_PROG = test
+JSONTEST_OBJS = jsontest.a json.a jsonutil.a
+JSONTEST_PROG = jsontest
 
 DISKBROWSER_OBJS = diskbrowser.a hostname.a http.a json.a jsonutil.a readtcp.a seturl.a strcasecmp.a tcpconnection.a urlparser.a
 DISKBROWSER_RSRC = diskbrowser.rez
 DISKBROWSER_PROG = DiskBrowser
 
-PROGS = $(TEST_PROG) $(DISKBROWSER_PROG)
+PROGS = $(JSONTEST_PROG) $(DISKBROWSER_PROG)
 
 .PHONY: default
 default: $(PROGS)
 
-$(TEST_PROG): $(TEST_OBJS)
+$(JSONTEST_PROG): $(JSONTEST_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 $(DISKBROWSER_PROG): $(DISKBROWSER_OBJS) $(DISKBROWSER_RSRC)
