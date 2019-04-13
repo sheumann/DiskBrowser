@@ -4,7 +4,7 @@ CFLAGS = -w-1 -O-1
 TEST_OBJS = test.a json.a jsonutil.a
 TEST_PROG = test
 
-DISKBROWSER_OBJS = diskbrowser.a
+DISKBROWSER_OBJS = diskbrowser.a hostname.a http.a json.a jsonutil.a readtcp.a seturl.a strcasecmp.a tcpconnection.a urlparser.a
 DISKBROWSER_RSRC = diskbrowser.rez
 DISKBROWSER_PROG = DiskBrowser
 
