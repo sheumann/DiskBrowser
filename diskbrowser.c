@@ -18,6 +18,7 @@
 #include <finder.h>
 #include <tcpip.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "session.h"
 #include "mounturl.h"
 #include "seturl.h"
@@ -62,7 +63,12 @@ Boolean resourceFileOpened, windowOpened;
 /* User preference */
 boolean gsDisksOnly = true;
 
-#define DISK_LIST_LENGTH 10
+char queryBuf[257];
+#define queryString (queryBuf + 1)
+
+int pageNum = 0;
+
+#define DISK_LIST_LENGTH 30
 
 struct diskListEntry {
     char *memPtr;
@@ -195,16 +201,40 @@ boolean processDoc(json_value *docObj) {
     if (id == NULL || title == NULL)
         return true;
     diskList[diskListPos].idPtr = id->u.string.ptr;
+    // TODO character set translation
     diskList[diskListPos++].memPtr = title->u.string.ptr;
     return true;
 }
 
 /* Do a search */
 void DoSearch(void) {
-    static char searchURL[] = "http://archive.org/advancedsearch.php?q=emulator%3Aapple3&fl%5B%5D=identifier&fl%5B%5D=title&rows=3&page=1&output=json";
+    char *searchURL = NULL;
+    int urlLength = 0;
     enum NetDiskError result;
 
     WaitCursor();
+
+    GetLETextByID(window, searchLine, (StringPtr)&queryBuf);
+
+    for (int i = 0; i < 2; i++) {
+        urlLength = snprintf(searchURL, urlLength, 
+                             "http://archive.org/advancedsearch.php?"
+                             "q=emulator%%3A%s%%20%s"
+                             "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
+                             "&fl%%5B%%5D=emulator_ext"
+                             "&rows=%i&page=%i&output=json", 
+                             gsDisksOnly ? "apple2gs" : "apple2*", 
+                             queryString,
+                             DISK_LIST_LENGTH,
+                             pageNum);
+        if (urlLength <= 0)
+            goto errorReturn;
+        if (i == 0) {
+            searchURL = malloc(urlLength);
+            if (searchURL == NULL)
+                goto errorReturn;
+        }
+    }
 
     result = SetURL(&sess, searchURL, FALSE, FALSE);
     //TODO enable this once we have real code to build the URL
@@ -265,11 +295,13 @@ void DoSearch(void) {
     ShowControl(GetCtlHandleFromID(window, ofPagesText));
     ShowControl(GetCtlHandleFromID(window, nextPageButton));
     
+    free(searchURL);
     EndTCPConnection(&sess);
     InitCursor();
     return;
 
 errorReturn:
+    free(searchURL);
     EndTCPConnection(&sess);
     InitCursor();
     // TODO show error message
