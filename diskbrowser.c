@@ -147,6 +147,8 @@ void CloseBrowserWindow(void) {
         json_value_free(json);
         json = NULL;
     }
+    
+    EndTCPConnection(&sess);
 }
 #pragma databank 0
 
@@ -228,6 +230,8 @@ void DoSearch(void) {
     sess.contentLength -= sess.readCount;
     *(netBuf + (sess.contentLength)) = 0;
 
+    if (json)
+        json_value_free(json);
     json = json_parse(netBuf, sess.contentLength);
     if (json == NULL)
         goto errorReturn;
@@ -425,6 +429,8 @@ cleanup:
 }
 
 void DoGoAway(void) {
+    CloseBrowserWindow();
+
     ResourceShutDown();
     
     /* TODO remove menu item, other cleanup? */
