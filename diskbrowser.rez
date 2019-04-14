@@ -133,7 +133,7 @@ resource rControlTemplate (disksList) {
         $0000,                          /* List Type */
         0,                              /* List Start */
         10,                             /* ListMemHeight */
-        5,                              /* List Mem Size */
+        9,                              /* List Mem Size */
         0,                              /* List Ref */
         0                               /* Color Ref */
     }};

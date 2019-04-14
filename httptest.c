@@ -70,7 +70,17 @@ int main(int argc, char **argv) {
     while (TryReadTCP(&sess) == rsWaiting)
         /* keep reading */ ;
 
-    printf("Read %lu bytes\n", sess.contentLength - sess.readCount);
+    //printf("sess.contentLength = %lu\n", sess.contentLength);
+    //printf("sess.readCount = %lu\n", sess.readCount);
+
+    sess.contentLength -= sess.readCount;
+
+    printf("Read %lu bytes:\n", sess.contentLength);
+    
+    for (unsigned long i = 0; i < sess.contentLength; i++) {
+        putchar(buf[i]);
+    }
+    putchar('\n');
 
 cleanup:
     EndTCPConnection(&sess);

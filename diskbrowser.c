@@ -11,6 +11,8 @@
 #include <lineedit.h>
 #include <list.h>
 #include <desk.h>
+#include <quickdraw.h>
+#include <qdaux.h>
 #include <gsos.h>
 #include <orca.h>
 #include <finder.h>
@@ -22,6 +24,8 @@
 #include "http.h"
 #include "readtcp.h"
 #include "tcpconnection.h"
+#include "json.h"
+#include "jsonutil.h"
 
 static char menuTitle[] = "\pArchive.org Disk Browser\xC9";
 static char windowTitle[] = "\p  Archive.org Disk Browser  ";
@@ -63,9 +67,12 @@ boolean gsDisksOnly = true;
 struct diskListEntry {
     char *memPtr;
     Byte memFlag;
+    char *idPtr;
 };
 
 struct diskListEntry diskList[DISK_LIST_LENGTH];
+
+int diskListPos = 0;
 
 static struct MountURLRec mountURLRec = {sizeof(struct MountURLRec)};
 
@@ -74,6 +81,11 @@ Session sess = {0};
 /* Record about our system window, to support processing by Desk Manager. */
 /* See Prog. Ref. for System 6.0, page 20. */
 static NDASysWindRecord sysWindRecord;
+
+/* Buffer for data received from network */
+char *netBuf = NULL;
+
+json_value *json = NULL;
 
 void InstallMenuItem(void) {
     static MenuItemTemplate menuItem = {
@@ -127,6 +139,14 @@ void CloseBrowserWindow(void) {
         CloseResourceFile(resourceFileID);
         resourceFileOpened = false;
     }
+    
+    free(netBuf);
+    netBuf = NULL;
+    
+    if (json) {
+        json_value_free(json);
+        json = NULL;
+    }
 }
 #pragma databank 0
 
@@ -162,10 +182,27 @@ boolean DoLEEdit (int editAction) {
     return ((id == searchLine) || (id == pageNumberLine));
 }
 
+boolean processDoc(json_value *docObj) {
+    if (diskListPos >= DISK_LIST_LENGTH)
+        return false;
+
+    if (docObj == NULL || docObj->type != json_object)
+        return false;
+    json_value *id = findEntryInObject(docObj, "identifier", json_string);
+    json_value *title = findEntryInObject(docObj, "title", json_string);
+    if (id == NULL || title == NULL)
+        return true;
+    diskList[diskListPos].idPtr = id->u.string.ptr;
+    diskList[diskListPos++].memPtr = title->u.string.ptr;
+    return true;
+}
+
 /* Do a search */
 void DoSearch(void) {
     static char searchURL[] = "http://archive.org/advancedsearch.php?q=emulator%3Aapple3&fl%5B%5D=identifier&fl%5B%5D=title&rows=3&page=1&output=json";
     enum NetDiskError result;
+
+    WaitCursor();
 
     result = SetURL(&sess, searchURL, FALSE, FALSE);
     //TODO enable this once we have real code to build the URL
@@ -180,26 +217,38 @@ void DoSearch(void) {
     if (sess.contentLength == 0 || sess.contentLength > 0xffff)
         sess.contentLength = 0xffff;
 
-    char *buf = malloc(sess.contentLength + 1);
-    if (buf == NULL)
+    free(netBuf);
+    netBuf = malloc(sess.contentLength + 1);
+    if (netBuf == NULL)
         goto errorReturn;
 
-    InitReadTCP(&sess, sess.contentLength, buf);
+    InitReadTCP(&sess, sess.contentLength, netBuf);
     while (TryReadTCP(&sess) == rsWaiting)
         /* keep reading */ ;
-    *(buf + (sess.contentLength - sess.readCount)) = 0;
+    sess.contentLength -= sess.readCount;
+    *(netBuf + (sess.contentLength)) = 0;
 
-    //TODO
+    json = json_parse(netBuf, sess.contentLength);
+    if (json == NULL)
+        goto errorReturn;
+
+    json_value *response = findEntryInObject(json, "response", json_object);
+    if (response == NULL)
+        goto errorReturn;
+
+    diskListPos = 0;
+    json_value *docs = findEntryInObject(response, "docs", json_array);
+    processArray(docs, json_object, processDoc);
+    
     for (int i = 0; i < DISK_LIST_LENGTH; i++) {
-        diskList[i].memPtr = buf;
         diskList[i].memFlag = 0;
     }
-    
+
     /* Update state of controls once disk list is available */
     CtlRecHndl disksListHandle = GetCtlHandleFromID(window, disksList);
     HiliteControl(noHilite, disksListHandle);
     NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
-             DISK_LIST_LENGTH, (Handle)disksListHandle);
+             diskListPos, (Handle)disksListHandle);
 
     SetCtlMoreFlags(
         GetCtlMoreFlags(disksListHandle) | fCtlCanBeTarget | fCtlWantEvents,
@@ -213,12 +262,14 @@ void DoSearch(void) {
     ShowControl(GetCtlHandleFromID(window, nextPageButton));
     
     EndTCPConnection(&sess);
+    InitCursor();
     return;
 
 errorReturn:
     EndTCPConnection(&sess);
+    InitCursor();
     // TODO show error message
-    //SysBeep();
+    SysBeep();
 }
 
 /* Handle an event after TaskMasterDA processing */
