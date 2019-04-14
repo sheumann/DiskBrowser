@@ -35,6 +35,8 @@
    #endif
 #endif
 
+#define JSON_ALLOW_TRAILING_GARBAGE 1
+
 const struct _json_value json_value_none;
 
 #include <stdio.h>
@@ -501,6 +503,7 @@ json_value * json_parse_ex (json_settings * settings,
             if (!b)
                break;
 
+#ifndef JSON_ALLOW_TRAILING_GARBAGE
             switch (b)
             {
                whitespace:
@@ -513,6 +516,9 @@ json_value * json_parse_ex (json_settings * settings,
 
                   goto e_failed;
             };
+#else
+            continue;
+#endif
          }
 
          if (flags & flag_seek_value)
