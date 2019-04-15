@@ -58,8 +58,8 @@ Boolean BuildHTTPRequest(Session *sess, char *resourceStr) {
             } else {
                 *s++ = c;
             }
-            *s = '\0';
         }
+        *s = '\0';
         resourceStr = escapedStr;
     }
 

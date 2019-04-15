@@ -227,3 +227,16 @@ resource rControlTemplate (mountDiskButton) {
 };
 
 resource rPString(mountDiskButton) { "Mount Disk" };
+
+
+/*
+ * Error messages
+ */
+
+#define searchErrorAlert 3000
+
+resource rAlertString (searchErrorAlert) {
+    "52/"
+    "There was an error when searching for disks. (error code *0)"
+    "/^#0\$00"
+};

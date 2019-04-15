@@ -39,8 +39,11 @@ enum NetDiskError {
     /* File format errors */
     UNSUPPORTED_2IMG_FILE = 600,
     NOT_MULTIPLE_OF_BLOCK_SIZE,
-    NOT_SPECIFIED_IMAGE_TYPE
+    NOT_SPECIFIED_IMAGE_TYPE,
     
+    /* Errors related to proccessing JSON result in the disk browser */
+    JSON_PARSING_ERROR = 900,
+    NOT_EXPECTED_CONTENTS,
 };
 
 

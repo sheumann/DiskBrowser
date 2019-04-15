@@ -49,6 +49,8 @@ char finderRequestName[] = "\pApple~Finder~";
 #define nextPageButton 1012
 #define mountDiskButton 1013
 
+#define searchErrorAlert 3000
+
 Word resourceFileID;
 
 /* ID of our menu item in the Finder (or 0 if we're not active) */
@@ -64,7 +66,6 @@ Boolean resourceFileOpened, windowOpened;
 boolean gsDisksOnly = true;
 
 char queryBuf[257];
-#define queryString (queryBuf + 1)
 
 int pageNum = 0;
 
@@ -206,15 +207,60 @@ boolean processDoc(json_value *docObj) {
     return true;
 }
 
+char *EncodeQueryString(char *queryString) {
+    long sizeNeeded;
+
+    char *encodedStr = NULL;
+    sizeNeeded = strlen(queryString);
+    if (sizeNeeded > 10000)
+        return NULL;
+    encodedStr = malloc(sizeNeeded*3 + 1);
+    if (encodedStr == NULL)
+        return NULL;
+
+    char *s = encodedStr;
+    char c;
+    while ((c = *queryString++) != '\0') {
+        if (c > 0x7F) {
+            //TODO character set translation
+            c = '*';
+        }
+        if ((c>='a' && c<='z') || (c>='A' && c<='Z') || (c>='0' && c<='9')) {
+            *s++ = c;
+        } else {
+            snprintf(s, 4, "%%%02X", (unsigned char)c);
+            s+= 3;
+        }
+    }
+    *s = '\0';
+    return encodedStr;
+}
+
+void ShowErrorAlert(enum NetDiskError error) {
+    char numStr[6] = "";
+    char *subs[1] = {numStr};
+    
+    snprintf(numStr, sizeof(numStr), "%u", error);
+
+    AlertWindow(awResource+awCString+awButtonLayout,
+                (Pointer)subs, searchErrorAlert);
+}
+
 /* Do a search */
 void DoSearch(void) {
     char *searchURL = NULL;
     int urlLength = 0;
-    enum NetDiskError result;
+    enum NetDiskError result = 0;
 
     WaitCursor();
 
     GetLETextByID(window, searchLine, (StringPtr)&queryBuf);
+
+    char *queryString = EncodeQueryString(queryBuf+1);
+    if (queryString == NULL) {
+        result = OUT_OF_MEMORY;
+        goto errorReturn;
+    }
 
     for (int i = 0; i < 2; i++) {
         urlLength = snprintf(searchURL, urlLength, 
@@ -223,23 +269,28 @@ void DoSearch(void) {
                              "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
                              "&fl%%5B%%5D=emulator_ext"
                              "&rows=%i&page=%i&output=json", 
-                             gsDisksOnly ? "apple2gs" : "apple2*", 
+                             gsDisksOnly ? "apple2gs" : "apple2%2A", 
                              queryString,
                              DISK_LIST_LENGTH,
                              pageNum);
-        if (urlLength <= 0)
+        if (urlLength <= 0) {
+            result = URL_TOO_LONG;
             goto errorReturn;
+        }
         if (i == 0) {
             searchURL = malloc(urlLength);
-            if (searchURL == NULL)
+            if (searchURL == NULL) {
+                result = OUT_OF_MEMORY;
                 goto errorReturn;
+            }
         }
     }
+    free(queryString);
+    queryString = NULL;
 
     result = SetURL(&sess, searchURL, FALSE, FALSE);
-    //TODO enable this once we have real code to build the URL
-    //if (result != OPERATION_SUCCESSFUL)
-    //    goto errorReturn;
+    if (result != OPERATION_SUCCESSFUL)
+        goto errorReturn;
 
     result = DoHTTPRequest(&sess);
     if (result != OPERATION_SUCCESSFUL)
@@ -251,27 +302,37 @@ void DoSearch(void) {
 
     free(netBuf);
     netBuf = malloc(sess.contentLength + 1);
-    if (netBuf == NULL)
+    if (netBuf == NULL) {
+        result = OUT_OF_MEMORY;
         goto errorReturn;
+    }
 
     InitReadTCP(&sess, sess.contentLength, netBuf);
     while (TryReadTCP(&sess) == rsWaiting)
         /* keep reading */ ;
     sess.contentLength -= sess.readCount;
-    *(netBuf + (sess.contentLength)) = 0;
+    *(netBuf + sess.contentLength) = 0;
 
     if (json)
         json_value_free(json);
     json = json_parse(netBuf, sess.contentLength);
-    if (json == NULL)
+    if (json == NULL) {
+        result = JSON_PARSING_ERROR;
         goto errorReturn;
+    }
 
     json_value *response = findEntryInObject(json, "response", json_object);
-    if (response == NULL)
+    if (response == NULL) {
+        result = NOT_EXPECTED_CONTENTS;
         goto errorReturn;
+    }
 
     diskListPos = 0;
     json_value *docs = findEntryInObject(response, "docs", json_array);
+    if (docs == NULL) {
+        result = NOT_EXPECTED_CONTENTS;
+        goto errorReturn;
+    }
     processArray(docs, json_object, processDoc);
     
     for (int i = 0; i < DISK_LIST_LENGTH; i++) {
@@ -287,7 +348,7 @@ void DoSearch(void) {
     SetCtlMoreFlags(
         GetCtlMoreFlags(disksListHandle) | fCtlCanBeTarget | fCtlWantEvents,
         disksListHandle);
-    HiliteControl(noHilite, GetCtlHandleFromID(window, mountDiskButton));
+    HiliteCtlByID(noHilite, window, mountDiskButton);
     
     ShowControl(GetCtlHandleFromID(window, previousPageButton));
     ShowControl(GetCtlHandleFromID(window, pageText));
@@ -301,11 +362,13 @@ void DoSearch(void) {
     return;
 
 errorReturn:
+    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
+             0, (Handle)GetCtlHandleFromID(window, disksList));
+    free(queryString);
     free(searchURL);
     EndTCPConnection(&sess);
     InitCursor();
-    // TODO show error message
-    SysBeep();
+    ShowErrorAlert(result);
 }
 
 /* Handle an event after TaskMasterDA processing */
@@ -442,8 +505,8 @@ void ShowBrowserWindow(void) {
     sysWindRecord.memoryID = myUserID;
     auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
     
-    HiliteControl(inactiveHilite, GetCtlHandleFromID(window, disksList));
-    HiliteControl(inactiveHilite, GetCtlHandleFromID(window, mountDiskButton));
+    HiliteCtlByID(inactiveHilite, window, disksList);
+    HiliteCtlByID(inactiveHilite, window, mountDiskButton);
     
     HideControl(GetCtlHandleFromID(window, previousPageButton));
     HideControl(GetCtlHandleFromID(window, pageText));
