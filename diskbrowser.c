@@ -42,12 +42,7 @@ char finderRequestName[] = "\pApple~Finder~";
 #define forIIGSRadio 1005
 #define forAnyAppleIIRadio 1006
 #define disksList 1007
-#define previousPageButton 1008
-#define pageText 1009
-#define pageNumberLine 1010
-#define ofPagesText 1011
-#define nextPageButton 1012
-#define mountDiskButton 1013
+#define mountDiskButton 1008
 
 #define searchErrorAlert 3000
 
@@ -168,7 +163,7 @@ boolean DoLEEdit (int editAction) {
     SetPort(window);
     ctl = FindTargetCtl();
     id = GetCtlID(ctl);
-    if ((id == searchLine) || (id == pageNumberLine)) {
+    if (id == searchLine) {
         LEFromScrap();
         switch (editAction) {
             case cutAction: 
@@ -188,7 +183,7 @@ boolean DoLEEdit (int editAction) {
         };
     };
     SetPort(port);
-    return ((id == searchLine) || (id == pageNumberLine));
+    return (id == searchLine);
 }
 
 boolean processDoc(json_value *docObj) {
@@ -356,12 +351,6 @@ void DoSearch(void) {
         disksListHandle);
     HiliteCtlByID(noHilite, window, mountDiskButton);
     
-    ShowControl(GetCtlHandleFromID(window, previousPageButton));
-    ShowControl(GetCtlHandleFromID(window, pageText));
-    ShowControl(GetCtlHandleFromID(window, pageNumberLine));
-    ShowControl(GetCtlHandleFromID(window, ofPagesText));
-    ShowControl(GetCtlHandleFromID(window, nextPageButton));
-    
     free(searchURL);
     EndTCPConnection(&sess);
     InitCursor();
@@ -392,14 +381,7 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
         case forAnyAppleIIRadio:
             gsDisksOnly = false;
             break;
-        
-        case previousPageButton:
-            //TODO
-            break;
-        case nextPageButton:
-            //TODO
-            break;
-        
+
         case mountDiskButton:
             // TODO
             break;
@@ -513,12 +495,6 @@ void ShowBrowserWindow(void) {
     
     HiliteCtlByID(inactiveHilite, window, disksList);
     HiliteCtlByID(inactiveHilite, window, mountDiskButton);
-    
-    HideControl(GetCtlHandleFromID(window, previousPageButton));
-    HideControl(GetCtlHandleFromID(window, pageText));
-    HideControl(GetCtlHandleFromID(window, pageNumberLine));
-    HideControl(GetCtlHandleFromID(window, ofPagesText));
-    HideControl(GetCtlHandleFromID(window, nextPageButton));
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {

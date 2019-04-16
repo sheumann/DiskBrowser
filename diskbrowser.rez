@@ -8,12 +8,7 @@
 #define forIIGSRadio 1005
 #define forAnyAppleIIRadio 1006
 #define disksList 1007
-#define previousPageButton 1008
-#define pageText 1009
-#define pageNumberLine 1010
-#define ofPagesText 1011
-#define nextPageButton 1012
-#define mountDiskButton 1013
+#define mountDiskButton 1008
 
 resource rWindParam1 (winDiskBrowser) {
     fTitle+fClose+fFlex+fMove+fVis,     /* wFrameBits */
@@ -36,11 +31,6 @@ resource rWindParam1 (winDiskBrowser) {
 
 resource rControlList (winDiskBrowser) {{
     mountDiskButton,
-    previousPageButton,
-    pageText,
-    pageNumberLine,
-    ofPagesText,
-    nextPageButton,
     disksList,
     findDisksForText,
     forIIGSRadio,
@@ -138,80 +128,6 @@ resource rControlTemplate (disksList) {
         0                               /* Color Ref */
     }};
 };
-
-resource rControlTemplate (previousPageButton) {
-    previousPageButton,
-    {150, 10, 161, 34},
-    SimpleButtonControl {{
-        0,
-        $1000+RefIsResource,
-        0,
-        previousPageButton,
-        0,                              /* color table ref */
-        {"","",0,0}                     /* key equivalent */
-    }};
-};
-
-resource rPString(previousPageButton) { "<" };
-
-resource rControlTemplate (pageText) {
-    pageText,                           /* control ID */
-    {151, 38, 163, 90},                 /* control rect */
-    statTextControl {{
-        fBlastText,                     /* flags */
-        $1000+RefIsResource,            /* moreFlags */
-        0,                              /* refCon */
-        pageText                        /* title ref */
-    }};
-};
-
-resource rTextForLETextBox2 (pageText) {
-    "Page"
-};
-
-resource rControlTemplate (pageNumberLine) {
-    pageNumberLine,
-    {149, 72, 162, 116},
-    editLineControl {{
-        0,
-        $7000+RefIsResource,
-        0,
-        4,                              /* max size */
-        pageNumberLine                  /* text ref */
-    }};
-};
-
-resource rPString (pageNumberLine) { "" };
-
-resource rControlTemplate (ofPagesText) {
-    ofPagesText,                        /* control ID */
-    {151, 119, 163, 170},               /* control rect */
-    statTextControl {{
-        fBlastText,                     /* flags */
-        $1000+RefIsResource,            /* moreFlags */
-        0,                              /* refCon */
-        ofPagesText                     /* title ref */
-    }};
-};
-
-resource rTextForLETextBox2 (ofPagesText) {
-    " "
-};
-
-resource rControlTemplate (nextPageButton) {
-    nextPageButton,
-    {150, 168, 161, 192},
-    SimpleButtonControl {{
-        0,
-        $1000+RefIsResource,
-        0,
-        nextPageButton,
-        0,                              /* color table ref */
-        {"","",0,0}                     /* key equivalent */
-    }};
-};
-
-resource rPString(nextPageButton) { ">" };
 
 resource rControlTemplate (mountDiskButton) {
     mountDiskButton,
