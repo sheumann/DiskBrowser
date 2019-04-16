@@ -312,6 +312,11 @@ void DoSearch(void) {
         /* keep reading */ ;
     sess.contentLength -= sess.readCount;
     *(netBuf + sess.contentLength) = 0;
+    if (sess.contentLength == 0) {
+        result = NO_RESPONSE;
+        goto errorReturn;
+    }
+
 
     if (json)
         json_value_free(json);
