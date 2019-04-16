@@ -268,6 +268,7 @@ void DoSearch(void) {
                              "q=emulator%%3A%s%%20%s"
                              "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
                              "&fl%%5B%%5D=emulator_ext"
+                             "&sort%%5B%%5D=titleSorterRaw+asc"
                              "&rows=%i&page=%i&output=json", 
                              gsDisksOnly ? "apple2gs" : "apple2%2A", 
                              queryString,
