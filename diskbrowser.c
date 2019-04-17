@@ -44,9 +44,6 @@ char finderRequestName[] = "\pApple~Finder~";
 #define disksList 1007
 #define mountDiskButton 1008
 
-#define searchButtonDefault (searchButton+50)
-#define mountDiskButtonDefault (mountDiskButton+50)
-
 #define searchErrorAlert 3000
 
 Word resourceFileID;
@@ -59,8 +56,14 @@ Word myUserID;
 GrafPortPtr window;
 
 CtlRecHndl disksListHandle;
-CtlRecHndl mountButtonHandle, mountButtonDefaultHandle;
-CtlRecHndl searchButtonHandle, searchButtonDefaultHandle;
+CtlRecHndl mountButtonHandle;
+CtlRecHndl searchButtonHandle;
+
+/* Rectangles outlining the buttons in the style of "default" buttons */
+static Rect searchRect = {8, 305, 26, 414};
+static Rect mountRect = {150, 301, 168, 414};
+
+Boolean defaultButtonIsSearch;
 
 unsigned long lastTargetCtlID = 0;
 
@@ -123,6 +126,25 @@ void InstallMenuItem(void) {
     }
 }
 
+/* Draw outlines of buttons as default or not, as appropriate. */
+void DrawButtonOutlines(boolean justChanged) {
+    PenNormal();
+    SetPenSize(3, 1);
+    if (defaultButtonIsSearch) {
+        FrameRRect(&searchRect, 36, 12);
+        if (justChanged) {
+            SetSolidPenPat(white);
+            FrameRRect(&mountRect, 36, 12);
+        }
+    } else {
+        FrameRRect(&mountRect, 36, 12);
+        if (justChanged) {
+            SetSolidPenPat(white);
+            FrameRRect(&searchRect, 36, 12);
+        }
+    }
+}
+
 #pragma databank 1
 void DrawContents(void) {
     Word origResourceApp = GetCurResourceApp();
@@ -130,6 +152,8 @@ void DrawContents(void) {
 
     PenNormal();                    /* use a "normal" pen */
     DrawControls(GetPort());        /* draw controls in window */
+    
+    DrawButtonOutlines(false);
     
     SetCurResourceApp(origResourceApp);
 }
@@ -168,8 +192,6 @@ boolean DoLEEdit (int editAction) {
     unsigned long id;       /* control ID */
     GrafPortPtr port;       /* caller's GrafPort */
 
-    port = GetPort();
-    SetPort(window);
     ctl = FindTargetCtl();
     id = GetCtlID(ctl);
     if (id == searchLine) {
@@ -191,7 +213,6 @@ boolean DoLEEdit (int editAction) {
                 break;
         };
     };
-    SetPort(port);
     return (id == searchLine);
 }
 
@@ -380,13 +401,42 @@ errorReturn:
     ShowErrorAlert(result);
 }
 
+/* Update state of controls based on user input */
+void UpdateControlState(void) {
+    unsigned long targetCtlID = GetCtlID(FindTargetCtl());
+    if (targetCtlID != lastTargetCtlID) {
+        /* Make appropriate button respond to the "return" key */
+        lastTargetCtlID = targetCtlID;
+        if (targetCtlID == searchLine) {
+            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonHandle) & 0x1FFF,
+                            mountButtonHandle);
+            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonHandle) | fCtlWantEvents,
+                            searchButtonHandle);
+            defaultButtonIsSearch = true;
+        } else if (targetCtlID == disksList) {
+            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonHandle) & 0x1FFF,
+                            searchButtonHandle);
+            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonHandle) | fCtlWantEvents,
+                            mountButtonHandle);
+            defaultButtonIsSearch = false;
+        }
+        DrawButtonOutlines(true);
+    }
+
+    /* Only allow "Mount Disk" to be clicked if there is a disk selected */
+    if (NextMember2(0, (Handle)disksListHandle) != 0) {
+        HiliteControl(noHilite, mountButtonHandle);
+    } else {
+        HiliteControl(inactiveHilite, mountButtonHandle);
+    }
+}
+
 /* Handle an event after TaskMasterDA processing */
 void HandleEvent(int eventCode, WmTaskRec *taskRec) {
     switch (eventCode) {
     case wInControl:
         switch (taskRec->wmTaskData4) {
         case searchButton:
-        case searchButtonDefault:
             DoSearch();
             break;
         
@@ -398,7 +448,6 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
             break;
 
         case mountDiskButton:
-        case mountDiskButtonDefault:
             // TODO
             break;
         }
@@ -422,36 +471,6 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
         }
         break;
     }
-
-    unsigned long targetCtlID = GetCtlID(FindTargetCtl());
-    if (targetCtlID != lastTargetCtlID) {
-        /* Make button corresponding to target control the default */
-        lastTargetCtlID = targetCtlID;
-        if (targetCtlID == searchLine) {
-            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonDefaultHandle) & 0x1FFF,
-                            mountButtonDefaultHandle);
-            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonDefaultHandle) | 0x3000,
-                            searchButtonDefaultHandle);
-            ShowControl(searchButtonDefaultHandle);
-            HideControl(mountButtonDefaultHandle);
-        } else if (targetCtlID == disksList) {
-            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonDefaultHandle) & 0x1FFF,
-                            searchButtonDefaultHandle);
-            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonDefaultHandle) | 0x3000,
-                            mountButtonDefaultHandle);
-            ShowControl(mountButtonDefaultHandle);
-            HideControl(searchButtonDefaultHandle);
-        }
-    }
-
-    /* Only allow "Mount Disk" to be clicked if there is a disk selected */
-    if (NextMember2(0, (Handle)disksListHandle) != 0) {
-        HiliteControl(noHilite, mountButtonHandle);
-        HiliteControl(noHilite, mountButtonDefaultHandle);
-    } else {
-        HiliteControl(inactiveHilite, mountButtonHandle);
-        HiliteControl(inactiveHilite, mountButtonDefaultHandle);
-    }
 }
 
 /* NDA-style action routine for our window */
@@ -459,6 +478,12 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
 int ActionProc(EventRecord *eventRec, int actionCode) {
     static WmTaskRec taskRec;
     int handledAction = 0;
+
+    if (!windowOpened)
+        return 0;
+
+    GrafPortPtr port = GetPort();
+    SetPort(window);
 
     switch (actionCode) {
     case eventAction:
@@ -468,6 +493,7 @@ int ActionProc(EventRecord *eventRec, int actionCode) {
         taskRec.wmTaskMask = 0x1F7FFF; /* everything except tmInfo */
         
         HandleEvent(TaskMasterDA(0, &taskRec), &taskRec);
+        UpdateControlState();
         break;
 
     case cursorAction:
@@ -477,11 +503,11 @@ int ActionProc(EventRecord *eventRec, int actionCode) {
     case copyAction:
     case pasteAction:
     case clearAction:
-        if (windowOpened) {
-            handledAction = DoLEEdit(actionCode);
-        }
+        handledAction = DoLEEdit(actionCode);
         break;
     }
+
+    SetPort(port);
 
     return handledAction;
 }
@@ -540,18 +566,14 @@ void ShowBrowserWindow(void) {
     auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
     
     disksListHandle = GetCtlHandleFromID(window, disksList);
-    mountButtonDefaultHandle = GetCtlHandleFromID(window, mountDiskButtonDefault);
-    searchButtonDefaultHandle = GetCtlHandleFromID(window, searchButtonDefault);
     mountButtonHandle = GetCtlHandleFromID(window, mountDiskButton);
     searchButtonHandle = GetCtlHandleFromID(window, searchButton);
     
-    HideControl(GetCtlHandleFromID(window, mountDiskButtonDefault));
-    
     HiliteControl(inactiveHilite, disksListHandle);
     HiliteControl(inactiveHilite, mountButtonHandle);
-    HiliteControl(inactiveHilite, mountButtonDefaultHandle);
-    
+
     lastTargetCtlID = 0;
+    defaultButtonIsSearch = true;
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {

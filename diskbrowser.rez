@@ -10,9 +10,6 @@
 #define disksList 1007
 #define mountDiskButton 1008
 
-#define searchButtonDefault (searchButton+50)
-#define mountDiskButtonDefault (mountDiskButton+50)
-
 resource rWindParam1 (winDiskBrowser) {
     fTitle+fClose+fFlex+fMove+fVis,     /* wFrameBits */
     nil,                                /* wTitle */
@@ -33,14 +30,12 @@ resource rWindParam1 (winDiskBrowser) {
 };
 
 resource rControlList (winDiskBrowser) {{
-    mountDiskButtonDefault,
     mountDiskButton,
     disksList,
     findDisksForText,
     forIIGSRadio,
     forAnyAppleIIRadio,
     searchLine,
-    searchButtonDefault,
     searchButton
 }};
 
@@ -59,29 +54,16 @@ resource rControlTemplate (searchLine) {
 resource rPString (searchLine) { "" };
 
 
-resource rControlTemplate (searchButtonDefault) {
-    searchButtonDefault,
-    {10, 309, 0, 0},
+resource rControlTemplate (searchButton) {
+    searchButton,
+    {10, 309, 24, 410},
     SimpleButtonControl {{
-        DefaultButton,
+        0,
         $3000+RefIsResource,
         0,
         searchButton,
         0,                              /* color table ref */
         {"\$0D","\$0D",0,0}             /* key equivalent = Return */
-    }};
-};
-
-resource rControlTemplate (searchButton) {
-    searchButton,
-    {10, 309, 0, 0},
-    SimpleButtonControl {{
-        0,
-        $1000+RefIsResource,
-        0,
-        searchButton,
-        0,                              /* color table ref */
-        {"","",0,0}                     /* key equivalent = Return */
     }};
 };
 
@@ -149,23 +131,10 @@ resource rControlTemplate (disksList) {
 
 resource rControlTemplate (mountDiskButton) {
     mountDiskButton,
-    {152, 305, 0, 0},
+    {152, 305, 166, 410},
     SimpleButtonControl {{
         0,
         $1000+RefIsResource,
-        0,
-        mountDiskButton,
-        0,                              /* color table ref */
-        {"","",0,0}                     /* key equivalent */
-    }};
-};
-
-resource rControlTemplate (mountDiskButtonDefault) {
-    mountDiskButtonDefault,
-    {152, 305, 0, 0},
-    SimpleButtonControl {{
-        DefaultButton,
-        $3000+RefIsResource,
         0,
         mountDiskButton,
         0,                              /* color table ref */
