@@ -44,6 +44,9 @@ char finderRequestName[] = "\pApple~Finder~";
 #define disksList 1007
 #define mountDiskButton 1008
 
+#define searchButtonDefault (searchButton+50)
+#define mountDiskButtonDefault (mountDiskButton+50)
+
 #define searchErrorAlert 3000
 
 Word resourceFileID;
@@ -54,6 +57,12 @@ Word menuItemID = 0;
 Word myUserID;
 
 GrafPortPtr window;
+
+CtlRecHndl disksListHandle;
+CtlRecHndl mountButtonHandle, mountButtonDefaultHandle;
+CtlRecHndl searchButtonHandle, searchButtonDefaultHandle;
+
+unsigned long lastTargetCtlID = 0;
 
 Boolean resourceFileOpened, windowOpened;
 
@@ -336,29 +345,34 @@ void DoSearch(void) {
     }
     processArray(docs, json_object, processDoc);
     
-    for (int i = 0; i < DISK_LIST_LENGTH; i++) {
+    diskList[0].memFlag = 0x80;
+    for (int i = 1; i < DISK_LIST_LENGTH; i++) {
         diskList[i].memFlag = 0;
     }
 
     /* Update state of controls once disk list is available */
-    CtlRecHndl disksListHandle = GetCtlHandleFromID(window, disksList);
     HiliteControl(noHilite, disksListHandle);
-    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
-             diskListPos, (Handle)disksListHandle);
-
     SetCtlMoreFlags(
         GetCtlMoreFlags(disksListHandle) | fCtlCanBeTarget | fCtlWantEvents,
         disksListHandle);
-    HiliteCtlByID(noHilite, window, mountDiskButton);
     
+    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
+             diskListPos, (Handle)disksListHandle);
+
+    if (diskListPos > 0) {
+        if (FindTargetCtl() != disksListHandle) {
+            MakeThisCtlTarget(disksListHandle);
+            CallCtlDefProc(disksListHandle, ctlChangeTarget, 0);
+        }
+    }
+
     free(searchURL);
     EndTCPConnection(&sess);
     InitCursor();
     return;
 
 errorReturn:
-    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
-             0, (Handle)GetCtlHandleFromID(window, disksList));
+    NewList2(NULL, 1, (Ref) diskList, refIsPointer, 0, (Handle)disksListHandle);
     free(queryString);
     free(searchURL);
     EndTCPConnection(&sess);
@@ -372,6 +386,7 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
     case wInControl:
         switch (taskRec->wmTaskData4) {
         case searchButton:
+        case searchButtonDefault:
             DoSearch();
             break;
         
@@ -383,6 +398,7 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
             break;
 
         case mountDiskButton:
+        case mountDiskButtonDefault:
             // TODO
             break;
         }
@@ -405,6 +421,36 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
             }
         }
         break;
+    }
+
+    unsigned long targetCtlID = GetCtlID(FindTargetCtl());
+    if (targetCtlID != lastTargetCtlID) {
+        /* Make button corresponding to target control the default */
+        lastTargetCtlID = targetCtlID;
+        if (targetCtlID == searchLine) {
+            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonDefaultHandle) & 0x1FFF,
+                            mountButtonDefaultHandle);
+            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonDefaultHandle) | 0x3000,
+                            searchButtonDefaultHandle);
+            ShowControl(searchButtonDefaultHandle);
+            HideControl(mountButtonDefaultHandle);
+        } else if (targetCtlID == disksList) {
+            SetCtlMoreFlags(GetCtlMoreFlags(searchButtonDefaultHandle) & 0x1FFF,
+                            searchButtonDefaultHandle);
+            SetCtlMoreFlags(GetCtlMoreFlags(mountButtonDefaultHandle) | 0x3000,
+                            mountButtonDefaultHandle);
+            ShowControl(mountButtonDefaultHandle);
+            HideControl(searchButtonDefaultHandle);
+        }
+    }
+
+    /* Only allow "Mount Disk" to be clicked if there is a disk selected */
+    if (NextMember2(0, (Handle)disksListHandle) != 0) {
+        HiliteControl(noHilite, mountButtonHandle);
+        HiliteControl(noHilite, mountButtonDefaultHandle);
+    } else {
+        HiliteControl(inactiveHilite, mountButtonHandle);
+        HiliteControl(inactiveHilite, mountButtonDefaultHandle);
     }
 }
 
@@ -493,8 +539,19 @@ void ShowBrowserWindow(void) {
     sysWindRecord.memoryID = myUserID;
     auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
     
-    HiliteCtlByID(inactiveHilite, window, disksList);
-    HiliteCtlByID(inactiveHilite, window, mountDiskButton);
+    disksListHandle = GetCtlHandleFromID(window, disksList);
+    mountButtonDefaultHandle = GetCtlHandleFromID(window, mountDiskButtonDefault);
+    searchButtonDefaultHandle = GetCtlHandleFromID(window, searchButtonDefault);
+    mountButtonHandle = GetCtlHandleFromID(window, mountDiskButton);
+    searchButtonHandle = GetCtlHandleFromID(window, searchButton);
+    
+    HideControl(GetCtlHandleFromID(window, mountDiskButtonDefault));
+    
+    HiliteControl(inactiveHilite, disksListHandle);
+    HiliteControl(inactiveHilite, mountButtonHandle);
+    HiliteControl(inactiveHilite, mountButtonDefaultHandle);
+    
+    lastTargetCtlID = 0;
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {
