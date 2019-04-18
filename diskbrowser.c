@@ -25,6 +25,7 @@
 #include "http.h"
 #include "readtcp.h"
 #include "tcpconnection.h"
+#include "asprintf.h"
 #include "json.h"
 #include "jsonutil.h"
 
@@ -45,6 +46,7 @@ char finderRequestName[] = "\pApple~Finder~";
 #define mountDiskButton 1008
 
 #define searchErrorAlert 3000
+#define mountErrorAlert 3001
 
 Word resourceFileID;
 
@@ -82,11 +84,15 @@ struct diskListEntry {
     char *memPtr;
     Byte memFlag;
     char *idPtr;
+    char *extPtr;
 };
 
 struct diskListEntry diskList[DISK_LIST_LENGTH];
 
 int diskListPos = 0;
+
+char *wantedExt;
+char *wantedItemID;
 
 static struct MountURLRec mountURLRec = {sizeof(struct MountURLRec)};
 
@@ -224,11 +230,13 @@ boolean processDoc(json_value *docObj) {
         return false;
     json_value *id = findEntryInObject(docObj, "identifier", json_string);
     json_value *title = findEntryInObject(docObj, "title", json_string);
-    if (id == NULL || title == NULL)
+    json_value *ext = findEntryInObject(docObj, "emulator_ext", json_string);
+    if (id == NULL || title == NULL || ext == NULL)
         return true;
     diskList[diskListPos].idPtr = id->u.string.ptr;
     // TODO character set translation
-    diskList[diskListPos++].memPtr = title->u.string.ptr;
+    diskList[diskListPos].memPtr = title->u.string.ptr;
+    diskList[diskListPos++].extPtr = ext->u.string.ptr;
     return true;
 }
 
@@ -261,60 +269,23 @@ char *EncodeQueryString(char *queryString) {
     return encodedStr;
 }
 
-void ShowErrorAlert(enum NetDiskError error) {
+void ShowErrorAlert(enum NetDiskError error, int alertNumber) {
     char numStr[6] = "";
     char *subs[1] = {numStr};
     
     snprintf(numStr, sizeof(numStr), "%u", error);
 
     AlertWindow(awResource+awCString+awButtonLayout,
-                (Pointer)subs, searchErrorAlert);
+                (Pointer)subs, alertNumber);
 }
 
-/* Do a search */
-void DoSearch(void) {
-    char *searchURL = NULL;
-    int urlLength = 0;
-    enum NetDiskError result = 0;
 
-    WaitCursor();
+enum NetDiskError ReadJSONFromURL(char *url, json_value** jsonResult) {
+    enum NetDiskError result = OPERATION_SUCCESSFUL;
 
-    GetLETextByID(window, searchLine, (StringPtr)&queryBuf);
+    *jsonResult = NULL;
 
-    char *queryString = EncodeQueryString(queryBuf+1);
-    if (queryString == NULL) {
-        result = OUT_OF_MEMORY;
-        goto errorReturn;
-    }
-
-    for (int i = 0; i < 2; i++) {
-        urlLength = snprintf(searchURL, urlLength, 
-                             "http://archive.org/advancedsearch.php?"
-                             "q=emulator%%3A%s%%20%s"
-                             "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
-                             "&fl%%5B%%5D=emulator_ext"
-                             "&sort%%5B%%5D=titleSorterRaw+asc"
-                             "&rows=%i&page=%i&output=json", 
-                             gsDisksOnly ? "apple2gs" : "apple2%2A", 
-                             queryString,
-                             DISK_LIST_LENGTH,
-                             pageNum);
-        if (urlLength <= 0) {
-            result = URL_TOO_LONG;
-            goto errorReturn;
-        }
-        if (i == 0) {
-            searchURL = malloc(urlLength);
-            if (searchURL == NULL) {
-                result = OUT_OF_MEMORY;
-                goto errorReturn;
-            }
-        }
-    }
-    free(queryString);
-    queryString = NULL;
-
-    result = SetURL(&sess, searchURL, FALSE, FALSE);
+    result = SetURL(&sess, url, FALSE, FALSE);
     if (result != OPERATION_SUCCESSFUL)
         goto errorReturn;
 
@@ -343,14 +314,57 @@ void DoSearch(void) {
         goto errorReturn;
     }
 
-
-    if (json)
-        json_value_free(json);
-    json = json_parse(netBuf, sess.contentLength);
-    if (json == NULL) {
+    *jsonResult = json_parse(netBuf, sess.contentLength);
+    if (*jsonResult == NULL) {
         result = JSON_PARSING_ERROR;
         goto errorReturn;
     }
+
+errorReturn:
+    free(netBuf);
+    netBuf = NULL;
+    EndTCPConnection(&sess);
+    return result;
+}
+
+/* Do a search */
+void DoSearch(void) {
+    char *searchURL = NULL;
+    enum NetDiskError result = 0;
+
+    WaitCursor();
+
+    GetLETextByID(window, searchLine, (StringPtr)&queryBuf);
+
+    char *queryString = EncodeQueryString(queryBuf+1);
+    if (queryString == NULL) {
+        result = OUT_OF_MEMORY;
+        goto errorReturn;
+    }
+
+    asprintf(&searchURL,
+             "http://archive.org/advancedsearch.php?"
+             "q=emulator%%3A%s%%20%s"
+             "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
+             "&fl%%5B%%5D=emulator_ext"
+             "&sort%%5B%%5D=titleSorterRaw+asc"
+             "&rows=%i&page=%i&output=json", 
+             gsDisksOnly ? "apple2gs" : "apple2%2A", 
+             queryString,
+             DISK_LIST_LENGTH,
+             pageNum);
+    if (searchURL == NULL) {
+        result = URL_TOO_LONG;
+        goto errorReturn;
+    }
+    free(queryString);
+    queryString = NULL;
+
+    if (json)
+        json_value_free(json);
+    result = ReadJSONFromURL(searchURL, &json);
+    if (result != OPERATION_SUCCESSFUL)
+        goto errorReturn;
 
     json_value *response = findEntryInObject(json, "response", json_object);
     if (response == NULL) {
@@ -388,7 +402,6 @@ void DoSearch(void) {
     }
 
     free(searchURL);
-    EndTCPConnection(&sess);
     InitCursor();
     return;
 
@@ -396,10 +409,96 @@ errorReturn:
     NewList2(NULL, 1, (Ref) diskList, refIsPointer, 0, (Handle)disksListHandle);
     free(queryString);
     free(searchURL);
-    EndTCPConnection(&sess);
     InitCursor();
-    ShowErrorAlert(result);
+    ShowErrorAlert(result, searchErrorAlert);
 }
+
+
+void MountFile(char *itemID, char *fileName) {
+    char *fileURL = NULL;
+    asprintf(&fileURL, "http://archive.org/download/%s/%s", itemID, fileName);
+    if (fileURL == NULL) {
+        SysBeep();
+        return;
+    }
+    
+    mountURLRec.result = NETDISK_NOT_PRESENT;
+    mountURLRec.url = fileURL;
+    mountURLRec.flags = flgUseCache;
+
+    SendRequest(MountURL, sendToName|stopAfterOne, (Long)NETDISK_REQUEST_NAME,
+                (Long)&mountURLRec, NULL);
+
+    free(fileURL);
+}
+
+boolean processFile(json_value *fileObj) {
+    if (fileObj == NULL || fileObj->type != json_object)
+        return false;
+        
+    json_value *name = findEntryInObject(fileObj, "name", json_string);
+    if (name == NULL)
+        return true;
+        
+    char *nameExt = strrchr(name->u.string.ptr, '.');
+    if (nameExt == NULL)
+        return true;
+    if (strcmp(nameExt + 1, wantedExt) == 0) {
+        MountFile(wantedItemID, name->u.string.ptr);
+        return false;
+    }
+    
+    return true;
+}
+
+void DoMount(void) {
+    unsigned int itemNumber = NextMember2(0, (Handle)disksListHandle);
+    char *filesURL = NULL;
+    enum NetDiskError result = 0;
+    json_value *filesJSON = NULL;
+    
+    if (itemNumber == 0) {
+        // shouldn't happen
+        result = 1;
+        goto errorReturn;
+    }
+    itemNumber--;
+    
+    if (diskList[itemNumber].idPtr == NULL) {
+        result = 2;
+        goto errorReturn;
+    }
+    
+    asprintf(&filesURL,
+             "http://archive.org/metadata/%s/files",
+             diskList[itemNumber].idPtr);
+    if (filesURL == NULL) {
+        result = 3;
+        goto errorReturn;
+    }
+    
+    result = ReadJSONFromURL(filesURL, &filesJSON);
+    if (result != OPERATION_SUCCESSFUL)
+        goto errorReturn;
+
+    json_value *resultJSON = findEntryInObject(filesJSON, "result", json_array);
+    if (resultJSON == NULL) {
+        result = NOT_EXPECTED_CONTENTS;
+        goto errorReturn;
+    }
+    
+    wantedExt = diskList[itemNumber].extPtr;
+    wantedItemID = diskList[itemNumber].idPtr;
+    processArray(resultJSON, json_object, processFile);
+
+errorReturn:
+    if (result != 0)
+        ShowErrorAlert(result, mountErrorAlert);
+    if (filesJSON != NULL)
+        json_value_free(filesJSON);
+    free(filesURL);
+}
+
 
 /* Update state of controls based on user input */
 void UpdateControlState(void) {
@@ -448,7 +547,7 @@ void HandleEvent(int eventCode, WmTaskRec *taskRec) {
             break;
 
         case mountDiskButton:
-            // TODO
+            DoMount();
             break;
         }
         break;

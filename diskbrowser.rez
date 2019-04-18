@@ -123,7 +123,7 @@ resource rControlTemplate (disksList) {
         $0000,                          /* List Type */
         0,                              /* List Start */
         10,                             /* ListMemHeight */
-        9,                              /* List Mem Size */
+        13,                             /* List Mem Size */
         0,                              /* List Ref */
         0                               /* Color Ref */
     }};
@@ -150,9 +150,17 @@ resource rPString(mountDiskButton) { "Mount Disk" };
  */
 
 #define searchErrorAlert 3000
+#define mountErrorAlert 3001
 
 resource rAlertString (searchErrorAlert) {
     "52/"
     "There was an error when searching for disks. (error code *0)"
     "/^#0\$00"
 };
+
+resource rAlertString (mountErrorAlert) {
+    "52/"
+    "There was an error when trying to mount a disk. (error code *0)"
+    "/^#0\$00"
+};
+
