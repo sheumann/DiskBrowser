@@ -107,6 +107,10 @@ char *netBuf = NULL;
 
 json_value *json = NULL;
 
+int wantToOpenWindow = 0;
+GSString32 devName;
+struct tellFinderOpenWindowOut tfowOut;
+
 void InstallMenuItem(void) {
     static MenuItemTemplate menuItem = {
         /* .version = */ 0x8000, /* show dividing line */
@@ -429,6 +433,12 @@ void MountFile(char *itemID, char *fileName) {
     SendRequest(MountURL, sendToName|stopAfterOne, (Long)NETDISK_REQUEST_NAME,
                 (Long)&mountURLRec, NULL);
 
+    if (mountURLRec.result == OPERATION_SUCCESSFUL) {
+        devName.length = snprintf(devName.text, sizeof(devName.text), ".D%u", 
+                                  mountURLRec.devNum);
+        wantToOpenWindow = 2;
+    }
+
     free(fileURL);
 }
 
@@ -456,6 +466,8 @@ void DoMount(void) {
     char *filesURL = NULL;
     enum NetDiskError result = 0;
     json_value *filesJSON = NULL;
+    
+    WaitCursor();
     
     if (itemNumber == 0) {
         // shouldn't happen
@@ -492,11 +504,13 @@ void DoMount(void) {
     processArray(resultJSON, json_object, processFile);
 
 errorReturn:
-    if (result != 0)
-        ShowErrorAlert(result, mountErrorAlert);
     if (filesJSON != NULL)
         json_value_free(filesJSON);
     free(filesURL);
+    
+    InitCursor();
+    if (result != 0)
+        ShowErrorAlert(result, mountErrorAlert);
 }
 
 
@@ -673,6 +687,8 @@ void ShowBrowserWindow(void) {
 
     lastTargetCtlID = 0;
     defaultButtonIsSearch = true;
+    
+    wantToOpenWindow = 0;
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {
@@ -706,6 +722,17 @@ static pascal Word requestProc(Word reqCode, Long dataIn, void *dataOut) {
         if ((dataIn & 0x0000FFFF) == menuItemID) {
             ShowBrowserWindow();
             return 0x8000;
+        }
+        break;
+
+    case finderSaysIdle:
+        /*
+         * Wait till the Finder has had time to recognize the new disk
+         * before opening the window for it.  Otherwise, it may crash.
+         */
+        if (wantToOpenWindow && --wantToOpenWindow == 0) {
+            SendRequest(tellFinderOpenWindow, sendToName|stopAfterOne,
+                        (Long)NAME_OF_FINDER, (Long)&devName, (Ptr)&tfowOut);
         }
         break;
     
