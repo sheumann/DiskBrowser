@@ -27,6 +27,10 @@
  * SUCH DAMAGE.
  */
 
+#ifdef __ORCAC__
+#pragma noroot
+#endif
+
 #include "json.h"
 
 #ifdef _MSC_VER

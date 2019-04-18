@@ -1,3 +1,7 @@
+#ifdef __ORCAC__
+#pragma noroot
+#endif
+
 #include <string.h>
 #include "jsonutil.h"
 

@@ -1,5 +1,6 @@
 #ifdef __ORCAC__
 #pragma optimize -1 /* must be at least 8 */
+#pragma noroot
 #endif
 
 #include <stdio.h>
