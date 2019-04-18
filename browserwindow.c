@@ -108,6 +108,8 @@ void ShowBrowserWindow(void) {
     defaultButtonIsSearch = true;
     
     wantToOpenWindow = 0;
+    
+    InitEventState();
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {

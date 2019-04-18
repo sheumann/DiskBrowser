@@ -10,6 +10,7 @@
 #include <desk.h>
 #include <event.h>
 #include <lineedit.h>
+#include <list.h>
 #include <quickdraw.h>
 #include <window.h>
 
@@ -23,13 +24,15 @@
 #include "disksearch.h"
 #include "diskmount.h"
 
+/* Task record used for TaskMasterDA */
+static WmTaskRec taskRec;
+
 static void HandleEvent(int eventCode, WmTaskRec *taskRec);
 static boolean DoLEEdit (int editAction);
 
 /* NDA-style action routine for our window */
 #pragma databank 1
 static int ActionProc(EventRecord *eventRec, int actionCode) {
-    static WmTaskRec taskRec;
     int handledAction = 0;
 
     if (!windowOpened)
@@ -41,7 +44,6 @@ static int ActionProc(EventRecord *eventRec, int actionCode) {
     switch (actionCode) {
     case eventAction:
         /* Copy basic event rec & use our own wmTaskMask, as per IIgs TN 84 */
-        memset(&taskRec, sizeof(taskRec), 0);
         memmove(&taskRec, eventRec, 16);
         taskRec.wmTaskMask = 0x1F7FFF; /* everything except tmInfo */
         
@@ -76,6 +78,8 @@ asm void actionProcWrapper(void) {
 
 /* Handle an event after TaskMasterDA processing */
 static void HandleEvent(int eventCode, WmTaskRec *taskRec) {
+    static unsigned int lastSelection;
+
     switch (eventCode) {
     case wInControl:
         switch (taskRec->wmTaskData4) {
@@ -92,6 +96,22 @@ static void HandleEvent(int eventCode, WmTaskRec *taskRec) {
 
         case mountDiskButton:
             DoMount();
+            break;
+        
+        case disksList:
+            if (taskRec->what == mouseDownEvt) {
+                if (taskRec->wmClickCount == 2) {
+                    SubPt(&taskRec->wmLastClickPt, &taskRec->where);
+                    if (taskRec->where.h >= -5 && taskRec->where.h <= 5 &&
+                        taskRec->where.v >= -3 && taskRec->where.v <= 3 &&
+                        NextMember2(0, (Handle)disksListHandle) == lastSelection)
+                    {
+                        DoMount();
+                    }
+                } else {
+                    lastSelection = NextMember2(0, (Handle)disksListHandle);
+                }
+            }
             break;
         }
         break;
@@ -144,3 +164,8 @@ static boolean DoLEEdit (int editAction) {
     };
     return (id == searchLine);
 }
+
+void InitEventState(void) {
+    memset(&taskRec, sizeof(taskRec), 0);
+}
+
