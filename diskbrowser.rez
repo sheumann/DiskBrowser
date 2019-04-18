@@ -12,10 +12,10 @@
 
 resource rWindParam1 (winDiskBrowser) {
     fTitle+fClose+fFlex+fMove+fVis,     /* wFrameBits */
-    nil,                                /* wTitle */
+    winDiskBrowser,                     /* wTitle */
     0,                                  /* wRefCon */
     {0,0,0,0},                          /* ZoomRect */
-    nil,                                /* wColor ID */
+    winDiskBrowser,                     /* wColor ID */
     {0,0},                              /* Origin */
     {0,0},                              /* data size */
     {0,0},                              /* max height-width */
@@ -26,7 +26,17 @@ resource rWindParam1 (winDiskBrowser) {
     {27,5,198,425},                     /* wPosition */
     infront,                            /* wPlane */
     winDiskBrowser,                     /* wStorage */
-    $0009                               /* wInVerb */
+    $0A09                               /* wInVerb */
+};
+
+resource rPString(winDiskBrowser) { "  Archive.org Disk Browser  " };
+
+resource rWindColor (winDiskBrowser) {
+    0x0000,                             /* frameColor */
+    0x0F00,                             /* titleColor */
+    0x020F,                             /* tbarColor */
+    0xF0F0,                             /* growColor */
+    0x00F0                              /* infoColor */
 };
 
 resource rControlList (winDiskBrowser) {{

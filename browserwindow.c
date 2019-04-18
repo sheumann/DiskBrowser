@@ -24,9 +24,6 @@
 #include "diskbrowser.h"
 #include "browserevents.h"
 
-/* Title of browser window */
-static char windowTitle[] = "\p  Archive.org Disk Browser  ";
-
 /* Rectangles outlining the buttons in the style of "default" buttons */
 static Rect searchRect = {8, 305, 26, 414};
 static Rect mountRect = {150, 301, 168, 414};
@@ -74,7 +71,7 @@ void ShowBrowserWindow(void) {
     }
     resourceFileOpened = true;
 
-    window = NewWindow2(windowTitle, 0, DrawContents, NULL,
+    window = NewWindow2(NULL, 0, DrawContents, NULL,
                         refIsResource, winDiskBrowser, rWindParam1);
     if (toolerror()) {
         window = NULL;
