@@ -76,7 +76,7 @@ void DoSearch(boolean getMore) {
 
     asprintf(&searchURL,
              "http://archive.org/advancedsearch.php?"
-             "q=emulator%%3A%s%%20%s"
+             "q=emulator%%3A%s%%20(%s)"
              "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
              "&fl%%5B%%5D=emulator_ext"
              "&sort%%5B%%5D=titleSorter+asc"
