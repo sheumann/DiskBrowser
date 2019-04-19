@@ -7,7 +7,7 @@ JSONTEST_PROG = jsontest
 HTTPTEST_OBJS = httptest.a hostname.a http.a readtcp.a seturl.a strcasecmp.a tcpconnection.a urlparser.a
 HTTPTEST_PROG = httptest
 
-DISKBROWSER_OBJS = diskbrowser.a browserevents.a browserwindow.a browserutil.a diskmount.a disksearch.a hostname.a http.a json.a jsonutil.a readtcp.a seturl.a strcasecmp.a tcpconnection.a urlparser.a asprintf.a
+DISKBROWSER_OBJS = diskbrowser.a browserevents.a browserwindow.a browserutil.a diskmount.a disksearch.a hostname.a http.a json.a jsonutil.a readtcp.a seturl.a strcasecmp.a tcpconnection.a urlparser.a netdiskerror.a asprintf.a
 DISKBROWSER_RSRC = diskbrowser.rez
 DISKBROWSER_PROG = DiskBrowser
 

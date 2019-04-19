@@ -133,6 +133,8 @@ static void MountFile(char *itemID, char *fileName) {
         devName.length = snprintf(devName.text, sizeof(devName.text), ".D%u", 
                                   mountURLRec.devNum);
         wantToOpenWindow = 2;
+    } else {
+        ShowErrorAlert(mountURLRec.result, mountErrorAlert);
     }
 
     free(fileURL);

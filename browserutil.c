@@ -6,6 +6,7 @@
 #pragma noroot
 #endif
 
+#include <quickdraw.h>
 #include <window.h>
 
 #include <stdio.h>
@@ -16,14 +17,15 @@
 #include "readtcp.h"
 #include "tcpconnection.h"
 #include "json.h"
+#include "netdiskerror.h"
 
 
 void ShowErrorAlert(enum NetDiskError error, int alertNumber) {
-    char numStr[6] = "";
-    char *subs[1] = {numStr};
-    
-    snprintf(numStr, sizeof(numStr), "%u", error);
+    char *subs[1];
 
+    subs[0] = ErrorString(error);
+
+    InitCursor();
     AlertWindow(awResource+awCString+awButtonLayout,
                 (Pointer)subs, alertNumber);
 }

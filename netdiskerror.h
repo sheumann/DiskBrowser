@@ -48,8 +48,8 @@ enum NetDiskError {
 
 
 /*
- * Return a string describing the error.  It may contain the substitution
- * string "*0", which should be replaced by the error number.
+ * Return a string describing the error.  It is only guaranteed to be valid
+ * until the next call to ErrorString().
  */
 char *ErrorString(enum NetDiskError err);
 
