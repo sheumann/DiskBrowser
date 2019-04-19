@@ -10,6 +10,16 @@
 #define disksList 1007
 #define mountDiskButton 1008
 
+resource rVersion (1) {
+    {
+        1,0,0,                          /* Version number */
+        beta, 1,                        /* Release version */
+    },
+    verUS,                              /* Region code */
+    "Archive.org Disk Browser",         /* Title */
+    "By Stephen Heumann"
+};
+
 resource rWindParam1 (winDiskBrowser) {
     fTitle+fClose+fFlex+fMove+fVis,     /* wFrameBits */
     winDiskBrowser,                     /* wTitle */
