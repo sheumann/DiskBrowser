@@ -84,14 +84,7 @@ static void HandleEvent(int eventCode, WmTaskRec *taskRec) {
     case wInControl:
         switch (taskRec->wmTaskData4) {
         case searchButton:
-            DoSearch();
-            break;
-        
-        case forIIGSRadio:
-            gsDisksOnly = true;
-            break;
-        case forAnyAppleIIRadio:
-            gsDisksOnly = false;
+            DoSearch(false);
             break;
 
         case mountDiskButton:

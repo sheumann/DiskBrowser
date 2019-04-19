@@ -123,14 +123,14 @@ resource rPString (forAnyAppleIIRadio) {"Any Apple II"};
 
 resource rControlTemplate (disksList) {
     disksList,                          /* control ID */
-    {45, 10, 147, 410},                 /* control rect */
+    {45, 10, 147, 386},                 /* control rect */
     ListControl {{
-        $0007,                          /* flags */
+        $0000,                          /* flags */
         $1400,                          /* more flags */
         0,                              /* refcon */
         0,                              /* list size */
         10,                              /* List View */
-        $0000,                          /* List Type */
+        $0003,                          /* List Type */
         0,                              /* List Start */
         10,                             /* ListMemHeight */
         13,                             /* List Mem Size */

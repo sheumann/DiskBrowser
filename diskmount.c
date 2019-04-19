@@ -24,6 +24,7 @@
 #include "diskbrowser.h"
 #include "diskmount.h"
 #include "browserutil.h"
+#include "disksearch.h"
 
 /* Item ID and file extension for the disk image we want to open */
 static char *wantedExt;
@@ -49,6 +50,11 @@ void DoMount(void) {
         goto errorReturn;
     }
     itemNumber--;
+    
+    if (diskList[itemNumber].memPtr == moreResultsString) {
+        DoSearch(true);
+        return;
+    }
     
     if (diskList[itemNumber].idPtr == NULL) {
         result = 2;

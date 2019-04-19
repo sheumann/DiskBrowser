@@ -23,10 +23,14 @@
 #include "browserwindow.h"
 #include "diskbrowser.h"
 #include "browserevents.h"
+#include "disksearch.h"
 
 /* Rectangles outlining the buttons in the style of "default" buttons */
 static Rect searchRect = {8, 305, 26, 414};
 static Rect mountRect = {150, 301, 168, 414};
+
+static char showMoreString[] = "\pShow More";
+static char mountDiskString[] = "\pMount Disk";
 
 /* Has the resource file been opened? (True while window is displayed.) */
 static Boolean resourceFileOpened;
@@ -47,6 +51,9 @@ static CtlRecHndl searchButtonHandle;
 
 /* Target control ID last time we checked */
 static unsigned long lastTargetCtlID = 0;
+
+/* Is "More Results" selected in the disk list? */
+static boolean moreResultsSelected = false;
 
 
 static void DrawContents(void);
@@ -109,7 +116,17 @@ void ShowBrowserWindow(void) {
     
     wantToOpenWindow = 0;
     
+    moreResultsSelected = false;
+    
     InitEventState();
+    
+    diskList = malloc(DISK_LIST_MAX_LENGTH * sizeof(*diskList));
+    if (diskList == NULL) {
+        CloseWindow(window);
+        windowOpened = false;
+        window = NULL;
+        goto cleanup;
+    }
 
 cleanup:
     if (resourceFileOpened && !windowOpened) {
@@ -127,20 +144,16 @@ void CloseBrowserWindow(void) {
         CloseWindow(window);
         windowOpened = false;
         window = NULL;
-        
-        /* reset state */
-        gsDisksOnly = true;
     }
 
     if (resourceFileOpened) {
         CloseResourceFile(resourceFileID);
         resourceFileOpened = false;
     }
+    
+    free(diskList);
 
-    if (json) {
-        json_value_free(json);
-        json = NULL;
-    }
+    FreeJSON();
 }
 #pragma databank 0
 
@@ -202,7 +215,23 @@ void UpdateControlState(void) {
     }
 
     /* Only allow "Mount Disk" to be clicked if there is a disk selected */
-    if (NextMember2(0, (Handle)disksListHandle) != 0) {
+    int currentSelection = NextMember2(0, (Handle)disksListHandle);
+    if (currentSelection != 0) {
+        if (diskList[currentSelection-1].memPtr == moreResultsString) {
+            if (!moreResultsSelected) {
+                SetCtlMoreFlags(GetCtlMoreFlags(mountButtonHandle) & 0xFFFC, 
+                                mountButtonHandle);
+                SetCtlTitle(showMoreString, (Handle)mountButtonHandle);
+                moreResultsSelected = true;
+            }
+        } else {
+            if (moreResultsSelected) {
+                SetCtlMoreFlags(GetCtlMoreFlags(mountButtonHandle) & 0xFFFC, 
+                                mountButtonHandle);
+                SetCtlTitle(mountDiskString, (Handle)mountButtonHandle);
+                moreResultsSelected = false;
+            }
+        }
         HiliteControl(noHilite, mountButtonHandle);
     } else {
         HiliteControl(inactiveHilite, mountButtonHandle);

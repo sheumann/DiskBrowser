@@ -22,14 +22,8 @@ extern GrafPortPtr window;
 /* Is the window open? */
 extern Boolean windowOpened;
 
-/* User preference: IIGS disks or all Apple II disks? */
-extern boolean gsDisksOnly;
-
 /* Disks list control */
 extern CtlRecHndl disksListHandle;
-
-/* Length of disks list */
-#define DISK_LIST_LENGTH 30
 
 struct diskListEntry {
     char *memPtr;
@@ -38,14 +32,25 @@ struct diskListEntry {
     char *extPtr;
 };
 
+/* Maximum number of entries in list */
+#define DISK_LIST_MAX_LENGTH (int)(0xFFFF/sizeof(struct diskListEntry))
+
+/* How many results to fetch at a time */
+#define PAGE_SIZE 30
+
+#define MAX_PAGES ((DISK_LIST_MAX_LENGTH + PAGE_SIZE - 1) / PAGE_SIZE)
+
 /* List of disks, used for list control & mounting disks */
-extern struct diskListEntry diskList[DISK_LIST_LENGTH];
+extern struct diskListEntry *diskList;
+
+/* String for "More Results" (used to identify that list entry) */
+extern char moreResultsString[];
 
 /* Do we want to open a window with disk contents? Counts down until ready. */
 extern int wantToOpenWindow;
 
 /* JSON for current disk list (needs to be kept in memory while it's shown) */
-extern json_value *json;
+extern json_value *json[MAX_PAGES];
 
 /* User ID of this program */
 extern Word myUserID;

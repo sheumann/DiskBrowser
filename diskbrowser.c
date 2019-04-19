@@ -27,23 +27,23 @@ GrafPortPtr window;
 /* Is the window open? */
 Boolean windowOpened;
 
-/* User preference: IIGS disks or all Apple II disks? */
-boolean gsDisksOnly = true;
-
 /* Disks list control */
 CtlRecHndl disksListHandle;
 
 /* List of disks, used for list control & mounting disks */
-struct diskListEntry diskList[DISK_LIST_LENGTH];
+struct diskListEntry *diskList;
 
 /* Do we want to open a window with disk contents? Counts down until ready. */
 int wantToOpenWindow = 0;
 
 /* JSON for current disk list (needs to be kept in memory while it's shown) */
-json_value *json = NULL;
+json_value *json[MAX_PAGES];
 
 /* User ID of this program */
 Word myUserID;
+
+/* String for "More Results" (used to identify that list entry) */
+char moreResultsString[] = "                               <More Results>";
 
 /***/
 
