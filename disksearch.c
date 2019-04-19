@@ -30,7 +30,7 @@
 static Rect diskListRect = {45, 10, 147, 386};
 
 /* Current length in disk list */
-static int diskListLength = 0;
+static unsigned diskListLength = 0;
 
 /* Number of current page of results from server */
 int pageNum;
@@ -50,7 +50,7 @@ void DoSearch(boolean getMore) {
     char *searchURL = NULL;
     enum NetDiskError result = 0;
 
-    int initialDiskListLength = diskListLength;
+    unsigned initialDiskListLength = diskListLength;
 
     WaitCursor();
 

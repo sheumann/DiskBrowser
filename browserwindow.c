@@ -215,7 +215,7 @@ void UpdateControlState(void) {
     }
 
     /* Only allow "Mount Disk" to be clicked if there is a disk selected */
-    int currentSelection = NextMember2(0, (Handle)disksListHandle);
+    unsigned currentSelection = NextMember2(0, (Handle)disksListHandle);
     if (currentSelection != 0) {
         if (diskList[currentSelection-1].memPtr == moreResultsString) {
             if (!moreResultsSelected) {
