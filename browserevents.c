@@ -27,6 +27,9 @@
 /* Task record used for TaskMasterDA */
 static WmTaskRec taskRec;
 
+/* Search line control */
+static CtlRecHndl searchLineHandle;
+
 static void HandleEvent(int eventCode, WmTaskRec *taskRec);
 static boolean DoLEEdit (int editAction);
 
@@ -89,6 +92,13 @@ static void HandleEvent(int eventCode, WmTaskRec *taskRec) {
 
         case mountDiskButton:
             DoMount();
+            break;
+        
+        case forIIGSRadio:
+        case forAnyAppleIIRadio:
+            if (FindTargetCtl() != searchLineHandle) {
+                MakeThisCtlTarget(searchLineHandle);
+            }
             break;
         
         case disksList:
@@ -160,5 +170,6 @@ static boolean DoLEEdit (int editAction) {
 
 void InitEventState(void) {
     memset(&taskRec, sizeof(taskRec), 0);
+    searchLineHandle = GetCtlHandleFromID(window, searchLine);
 }
 

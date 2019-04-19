@@ -103,7 +103,9 @@ void ShowBrowserWindow(void) {
     sysWindRecord.eventMask = 0xFFFF; //0x03FF;
     sysWindRecord.memoryID = myUserID;
     auxWindInfo->NDASysWindPtr = (Ptr)&sysWindRecord;
-    
+
+    InitEventState();
+
     disksListHandle = GetCtlHandleFromID(window, disksList);
     mountButtonHandle = GetCtlHandleFromID(window, mountDiskButton);
     searchButtonHandle = GetCtlHandleFromID(window, searchButton);
@@ -117,8 +119,6 @@ void ShowBrowserWindow(void) {
     wantToOpenWindow = 0;
     
     moreResultsSelected = false;
-    
-    InitEventState();
     
     diskList = malloc(DISK_LIST_MAX_LENGTH * sizeof(*diskList));
     if (diskList == NULL) {
