@@ -12,6 +12,7 @@
 #include <quickdraw.h>
 #include <qdaux.h>
 #include <window.h>
+#include <tcpip.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +54,8 @@ void DoSearch(boolean getMore) {
     unsigned initialDiskListLength = diskListLength;
 
     WaitCursor();
+
+    TCPIPConnect(NULL);
 
     if (!getMore) {
         FreeJSON();
