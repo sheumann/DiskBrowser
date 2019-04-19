@@ -5,6 +5,7 @@
 #pragma rtl
 
 #include <finder.h>
+#include <list.h>
 #include <locator.h>
 #include <memory.h>
 #include <menu.h>
@@ -70,7 +71,7 @@ void InstallMenuItem(void) {
         /* .itemTitleRef = */ (Long)&menuTitle
     };
     
-    tellFinderAddToExtrasOut dataOutRec;
+    tellFinderAddToExtrasOut dataOutRec = {0};
 
     SendRequest(tellFinderAddToExtras, sendToName|stopAfterOne,
                 (Long)NAME_OF_FINDER,
@@ -84,12 +85,24 @@ void InstallMenuItem(void) {
     }
 }
 
+void RemoveMenuItem(void) {
+    tellFinderRemoveFromExtrasOut dataOutRec = {0};
+
+    if (menuItemID == 0)
+        return;
+
+    SendRequest(tellFinderRemoveFromExtras, sendToName|stopAfterOne,
+                (Long)NAME_OF_FINDER,
+                (Long)menuItemID,
+                (Ptr)&dataOutRec);
+    menuItemID = 0;
+}
+
 void DoGoAway(void) {
     CloseBrowserWindow();
-
+    RemoveMenuItem();
+    AcceptRequests(NULL, myUserID, NULL);
     ResourceShutDown();
-    
-    /* TODO remove menu item, other cleanup? */
 }
 
 /*
@@ -101,6 +114,10 @@ static pascal Word requestProc(Word reqCode, Long dataIn, void *dataOut) {
     switch (reqCode) {
     case finderSaysHello:
         InstallMenuItem();
+        break;
+
+    case finderSaysGoodbye:
+        RemoveMenuItem();
         break;
 
     case finderSaysExtrasChosen:
@@ -155,6 +172,11 @@ int main(void) {
 
     /* Bail out if NetDisk or Marinetti is not present */
     if (!NetDiskPresent() || !TCPIPStatus() || toolerror()) {
+        return 1;
+    }
+
+    /* Check for List Manager, in case future Finder doesn't start it. */
+    if (!ListStatus() || toolerror()) {
         return 1;
     }
 
