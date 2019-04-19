@@ -125,6 +125,7 @@ static void MountFile(char *itemID, char *fileName) {
     mountURLRec.result = NETDISK_NOT_PRESENT;
     mountURLRec.url = fileURL;
     mountURLRec.flags = flgUseCache;
+    mountURLRec.format = formatAutoDetect;
 
     SendRequest(MountURL, sendToName|stopAfterOne, (Long)NETDISK_REQUEST_NAME,
                 (Long)&mountURLRec, NULL);
