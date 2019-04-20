@@ -46,6 +46,9 @@ extern struct diskListEntry *diskList;
 /* String for "More Results" (used to identify that list entry) */
 extern char moreResultsString[];
 
+/* String to indicate no results were found */
+extern char noResultsString[];
+
 /* Do we want to open a window with disk contents? Counts down until ready. */
 extern int wantToOpenWindow;
 

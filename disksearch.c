@@ -40,6 +40,7 @@ static boolean processDoc(json_value *docObj);
 static char *EncodeQueryString(char *queryString);
 
 struct diskListEntry moreResultsEntry = {moreResultsString , 0, "", ""};
+struct diskListEntry noResultsEntry = {noResultsString , 0x60, "", ""};
 
 static void InsertDiskListEntry(struct diskListEntry *entry);
 
@@ -154,6 +155,10 @@ void DoSearch(boolean getMore) {
             MakeThisCtlTarget(disksListHandle);
             CallCtlDefProc(disksListHandle, ctlChangeTarget, 0);
         }
+    } else {
+        InsertDiskListEntry(&noResultsEntry);
+        NewList2(NULL, 1, (Ref) diskList, refIsPointer, 
+                 diskListLength, (Handle)disksListHandle);
     }
 
     free(searchURL);

@@ -41,15 +41,18 @@ void DoMount(void) {
     char *filesURL = NULL;
     enum NetDiskError result = 0;
     json_value *filesJSON = NULL;
-    
-    WaitCursor();
-    
+        
     if (itemNumber == 0) {
         // shouldn't happen
-        result = 1;
-        goto errorReturn;
+        return;
     }
     itemNumber--;
+
+    if (diskList[itemNumber].memPtr == noResultsString) {
+        return;
+    }
+
+    WaitCursor();
     
     if (diskList[itemNumber].memPtr == moreResultsString) {
         DoSearch(true);

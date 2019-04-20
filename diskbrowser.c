@@ -46,6 +46,9 @@ Word myUserID;
 /* String for "More Results" (used to identify that list entry) */
 char moreResultsString[] = "                               <More Results>";
 
+/* String to indicate no results were found */
+char noResultsString[] = "                                No Disks Found";
+
 /***/
 
 static char menuTitle[] = "\pArchive.org Disk Browser\xC9";
