@@ -79,13 +79,15 @@ void DoSearch(boolean getMore) {
 
     asprintf(&searchURL,
              "http://archive.org/advancedsearch.php?"
-             "q=emulator%%3A%s%%20(%s)"
+             "q=emulator%%3A%s%s%s%s"
              "&fl%%5B%%5D=identifier&fl%%5B%%5D=title"
              "&fl%%5B%%5D=emulator_ext"
              "&sort%%5B%%5D=titleSorter+asc"
              "&rows=%i&page=%i&output=json", 
              gsDisksOnly ? "apple2gs" : "apple2%2A", 
+             queryString[0] != '\0' ? "%20(" : "",
              queryString,
+             queryString[0] != '\0' ? ")" : "",
              PAGE_SIZE,
              pageNum + 1);
     if (searchURL == NULL) {
