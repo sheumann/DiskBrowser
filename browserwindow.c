@@ -62,7 +62,7 @@ static void DrawButtonOutlines(boolean justChanged);
 
 void ShowBrowserWindow(void) {
     if (windowOpened) {
-        BringToFront(window);
+        SelectWindow(window);
         return;
     }
 
