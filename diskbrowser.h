@@ -36,7 +36,7 @@ struct diskListEntry {
 #define DISK_LIST_MAX_LENGTH (int)(0xFFFF/sizeof(struct diskListEntry))
 
 /* How many results to fetch at a time */
-#define PAGE_SIZE 30
+#define PAGE_SIZE 50
 
 #define MAX_PAGES ((DISK_LIST_MAX_LENGTH + PAGE_SIZE - 1) / PAGE_SIZE)
 
