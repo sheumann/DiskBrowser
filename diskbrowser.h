@@ -14,7 +14,10 @@
 
 #define searchErrorAlert        3000
 #define mountErrorAlert         3001
+#define marinettiVersionWarning 3002
 
+
+#define DESIRED_MARINETTI_VERSION 0x03006011 /* 3.0b11 */
 
 /* The browser window */
 extern GrafPortPtr window;

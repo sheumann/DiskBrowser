@@ -171,6 +171,7 @@ resource rPString(mountDiskButton) { "Mount Disk" };
 
 #define searchErrorAlert 3000
 #define mountErrorAlert 3001
+#define marinettiVersionWarning 3002
 
 resource rAlertString (searchErrorAlert) {
     "72/"
@@ -186,5 +187,15 @@ resource rAlertString (mountErrorAlert) {
     "\n"
     "*0"
     "/^#0\$00"
+};
+
+resource rAlertString (marinettiVersionWarning) {
+    "84:"
+    "NetDisk and the Archive.org Disk Browser are designed for use with "
+    "Marinetti 3.0b11 or later. You are currently using an older version of "
+    "Marinetti. You can try to use NetDisk with your current Marinetti "
+    "version, but you may experience I/O errors or other problems. "
+    "To ensure proper operation, please upgrade Marinetti."
+    ":^#6\$00"
 };
 

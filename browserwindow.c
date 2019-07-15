@@ -13,6 +13,7 @@
 #include <quickdraw.h>
 #include <resources.h>
 #include <window.h>
+#include <tcpip.h>
 #include <gsos.h>
 
 #include <orca.h>
@@ -24,6 +25,7 @@
 #include "diskbrowser.h"
 #include "browserevents.h"
 #include "disksearch.h"
+#include "browserutil.h"
 
 /* Rectangles outlining the buttons in the style of "default" buttons */
 static Rect searchRect = {8, 305, 26, 414};
@@ -60,6 +62,17 @@ static void DrawContents(void);
 static void DrawButtonOutlines(boolean justChanged);
 
 
+static void MarinettiVersionCheck(void) {
+    static boolean alreadyChecked = false;
+
+    if (!alreadyChecked) {
+        if (TCPIPLongVersion() < DESIRED_MARINETTI_VERSION) {
+            ShowErrorAlert(0, marinettiVersionWarning);
+        }
+        alreadyChecked = true;
+    }
+}
+
 void ShowBrowserWindow(void) {
     if (windowOpened) {
         SelectWindow(window);
@@ -77,6 +90,8 @@ void ShowBrowserWindow(void) {
         goto cleanup;
     }
     resourceFileOpened = true;
+
+    MarinettiVersionCheck();
 
     window = NewWindow2(NULL, 0, DrawContents, NULL,
                         refIsResource, winDiskBrowser, rWindParam1);
