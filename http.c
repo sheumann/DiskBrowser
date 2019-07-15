@@ -149,11 +149,12 @@ netRetry:
     LongWord startTime = GetTick();
     do {
         TCPIPPoll();
+        u.rlrBuff.rlrBuffCount = 0;
         tcpError = TCPIPReadLineTCP(sess->ipid,
                 (void*)((LongWord)"\p\r\n\r\n" | 0x80000000),
                 buffTypeNewHandle, (Ref)NULL,
                 0xFFFFFF, &u.rlrBuff);
-        if (tcpError || toolerror()) {
+        if ((tcpError && u.rlrBuff.rlrBuffCount == 0) || toolerror()) {
             if (netErrors == 0) {
                 netErrors++;
                 goto netRetry;
