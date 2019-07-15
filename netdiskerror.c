@@ -44,6 +44,12 @@ char *ErrorString(enum NetDiskError err) {
     case NOT_MULTIPLE_OF_BLOCK_SIZE:
         return "The file is not a multiple of 512 bytes. It may not be a disk "
                "image file, or is not in a supported format.";
+    case NOT_SPECIFIED_IMAGE_TYPE:
+        return "The file is not a valid disk image of the type specified by "
+               "its file name.";
+    case UNSUPPORTED_IMAGE_TYPE:
+        return "This disk image is of a type not supported by NetDisk, such "
+               "as NIB or WOZ.";
 
     /* JSON processing errors */
     case JSON_PARSING_ERROR:

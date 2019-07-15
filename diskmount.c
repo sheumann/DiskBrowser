@@ -20,6 +20,7 @@
 #include "asprintf.h"
 #include "json.h"
 #include "jsonutil.h"
+#include "strcasecmp.h"
 
 #include "diskbrowser.h"
 #include "diskmount.h"
@@ -34,7 +35,7 @@ static char *wantedItemID;
 static GSString32 devName;
 
 static boolean processFile(json_value *fileObj);
-static void MountFile(char *itemID, char *fileName);
+static void MountFile(char *itemID, char *fileName, char *fileExt);
 
 void DoMount(void) {
     unsigned int itemNumber = NextMember2(0, (Handle)disksListHandle);
@@ -108,15 +109,20 @@ static boolean processFile(json_value *fileObj) {
     if (nameExt == NULL)
         return true;
     if (strcmp(nameExt + 1, wantedExt) == 0) {
-        MountFile(wantedItemID, name->u.string.ptr);
+        MountFile(wantedItemID, name->u.string.ptr, nameExt + 1);
         return false;
     }
     
     return true;
 }
 
-static void MountFile(char *itemID, char *fileName) {
+static void MountFile(char *itemID, char *fileName, char *fileExt) {
     static struct MountURLRec mountURLRec = {sizeof(struct MountURLRec)};
+
+    if (strcasecmp(fileExt, "woz") == 0 || strcasecmp(fileExt, "nib") == 0) {
+        ShowErrorAlert(UNSUPPORTED_IMAGE_TYPE, mountErrorAlert);
+        return;
+    }
 
     char *fileURL = NULL;
     asprintf(&fileURL, "http://archive.org/download/%s/%s", itemID, fileName);
@@ -128,7 +134,16 @@ static void MountFile(char *itemID, char *fileName) {
     mountURLRec.result = NETDISK_NOT_PRESENT;
     mountURLRec.url = fileURL;
     mountURLRec.flags = flgUseCache;
-    mountURLRec.format = formatAutoDetect;
+    
+    if (strcasecmp(fileExt, "do") == 0) {
+        mountURLRec.format = formatDOSOrder;
+    } else if (strcasecmp(fileExt, "po") == 0) {
+        mountURLRec.format = formatRaw;
+    } else if (strcasecmp(fileExt, "2mg") == 0) {
+        mountURLRec.format = format2mg;
+    } else {
+        mountURLRec.format = formatAutoDetect;
+    }
 
     SendRequest(MountURL, sendToName|stopAfterOne, (Long)NETDISK_REQUEST_NAME,
                 (Long)&mountURLRec, NULL);
