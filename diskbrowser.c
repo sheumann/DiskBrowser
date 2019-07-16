@@ -28,6 +28,9 @@ GrafPortPtr window;
 /* Is the window open? */
 Boolean windowOpened;
 
+/* Is the resource manager started for our user ID? */
+Boolean resourceStarted = false;
+
 /* Disks list control */
 CtlRecHndl disksListHandle;
 
@@ -105,7 +108,13 @@ void DoGoAway(void) {
     CloseBrowserWindow();
     RemoveMenuItem();
     AcceptRequests(NULL, myUserID, NULL);
-    ResourceShutDown();
+    if (resourceStarted) {
+        Word origResourceApp = GetCurResourceApp();
+        SetCurResourceApp(myUserID);
+        ResourceShutDown();
+        SetCurResourceApp(origResourceApp);
+        resourceStarted = false;
+    }
 }
 
 /*
@@ -171,6 +180,7 @@ int main(void) {
     
     Word origResourceApp = GetCurResourceApp();
     ResourceStartUp(myUserID);
+    resourceStarted = true;
     SetCurResourceApp(origResourceApp);
 
     /* Bail out if NetDisk or Marinetti is not present */
