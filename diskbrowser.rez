@@ -10,10 +10,11 @@
 #define disksList 1007
 #define mountDiskButton 1008
 
+/* This should be kept in sync with version.h. */
 resource rVersion (1) {
     {
         1,0,0,                          /* Version number */
-        beta, 1,                        /* Release version */
+        release, 0,                        /* Release version */
     },
     verUS,                              /* Region code */
     "Archive.org Disk Browser",         /* Title */
